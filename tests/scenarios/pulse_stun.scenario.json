@@ -1,0 +1,2 @@
+{ "random_motes": false, "random_shades": false, "motes": [],
+  "player": { "carried": 2 }, "shades": [{ "id": "S1", "pos": [5, 0, 0] }, { "id": "FAR", "pos": [0, 0, -30] }] }
