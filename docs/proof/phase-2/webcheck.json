@@ -1,0 +1,109 @@
+{
+  "url": "http://localhost:5173",
+  "errors": [],
+  "gpu": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4050 Laptop GPU (0x000028E1) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+  "bench": {
+    "night1": {
+      "avg_fps": 164.59835401645987,
+      "worst_frame_ms": 30.5,
+      "frames": 1646,
+      "w": 1280,
+      "h": 720
+    },
+    "night2": {
+      "avg_fps": 165.1,
+      "worst_frame_ms": 6.799999999999272,
+      "frames": 1651,
+      "w": 1280,
+      "h": 720
+    },
+    "night3": {
+      "avg_fps": 165.0966980660387,
+      "worst_frame_ms": 6.799999999999272,
+      "frames": 1651,
+      "w": 1280,
+      "h": 720
+    }
+  },
+  "flow": [
+    {
+      "name": "menu -> night intro shows island + Ông Đăng",
+      "got": [
+        "intro",
+        "Đêm 1: Đảo Bến",
+        true
+      ],
+      "ok": true
+    },
+    {
+      "name": "intro -> play",
+      "got": "play",
+      "ok": true
+    },
+    {
+      "name": "Esc pauses, logic frozen",
+      "got": [
+        "pause",
+        true
+      ],
+      "ok": true
+    },
+    {
+      "name": "pause menu buttons",
+      "got": [
+        "Tiếp tục",
+        "Chơi lại Đêm",
+        "Cài đặt",
+        "Về menu"
+      ],
+      "ok": true
+    },
+    {
+      "name": "settings saved",
+      "got": "pause",
+      "ok": true
+    },
+    {
+      "name": "settings survive a reload",
+      "got": {
+        "volume": 0.3,
+        "sensitivity": 1.7
+      },
+      "ok": true
+    },
+    {
+      "name": "HUD: hint near lantern + timer red at <= 30 s",
+      "got": [
+        "E — Nạp ánh sáng (0/10)",
+        true
+      ],
+      "ok": true
+    },
+    {
+      "name": "win night 1 -> result -> next night intro",
+      "got": [
+        true,
+        "intro",
+        "Đêm 2: Đảo Cau"
+      ],
+      "ok": true
+    },
+    {
+      "name": "lose (dawn) -> retry same night",
+      "got": [
+        "result",
+        "Chơi lại Đêm 2 (Enter)"
+      ],
+      "ok": true
+    },
+    {
+      "name": "win night 3 -> Bình Minh with total score",
+      "got": [
+        "dawn",
+        "Bình Minh",
+        true
+      ],
+      "ok": true
+    }
+  ]
+}
