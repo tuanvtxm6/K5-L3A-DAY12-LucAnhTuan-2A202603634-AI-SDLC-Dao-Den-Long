@@ -29,7 +29,10 @@ export const DEFAULT_INPUT = Object.freeze({
 });
 
 export class Game {
-  constructor({ seed = 0, night = 1, scenario = null, tuning = TUNING, world = WORLD } = {}) {
+  // bench: Ticket-04 benchmark scene — no spawns, no damage, no pickup, no fuel decay, no end of night;
+  //        shades still wander normally. Never used by the headless contract runner.
+  constructor({ seed = 0, night = 1, scenario = null, tuning = TUNING, world = WORLD, bench = false } = {}) {
+    this.bench = bench;
     this.map = MAPS[night];
     if (!this.map) throw new Error(`unknown night ${night}`);
     this.night = night;
@@ -279,7 +282,7 @@ export class Game {
     // lantern fuel: decay + drain (integer units), then lanterns at fuel <= 0 go out
     const t = this.t;
     for (const L of this.lanterns) {
-      if (!L.lit) continue;
+      if (!L.lit || this.bench) continue;
       const drainers = this.shades.filter((s) => s.state === 'drain' && s.target === L.id);
       L.fu -= Math.round(t.fuel_decay_per_s) + Math.round(t.drain_per_s) * drainers.length;
       for (const s of drainers) {
@@ -396,7 +399,7 @@ export class Game {
   // 4. motes and charms
   #pickup() {
     const p = this.player, t = this.t, w = this.w;
-    if (p.fallWait > 0) return;
+    if (p.fallWait > 0 || this.bench) return;
     const cap = this.capacity();
     for (let i = 0; i < this.motes.length && p.carried < cap; ) {
       const m = this.motes[i];
@@ -520,7 +523,7 @@ export class Game {
     for (const s of this.shades) {
       const dist = dXZ(s.pos, p.pos);
       const visible = p.fallWait === 0;
-      if (s.state === 'wander' && visible && dist <= w.shade_detect_m) s.state = 'chase';
+      if (s.state === 'wander' && visible && dist <= w.shade_detect_m && !this.bench) s.state = 'chase'; // bench: stay in wander
       else if (s.state === 'chase' && (!visible || dist > w.shade_lose_m)) s.state = 'wander';
       else if (s.state === 'drain') {
         const L = this.lanterns.find((x) => x.id === s.target);
@@ -603,7 +606,7 @@ export class Game {
   // 9. contacts: drifters steal first, then the first shade (by id) hits
   #contacts() {
     const p = this.player, t = this.t, w = this.w;
-    if (p.fallWait > 0) return;
+    if (p.fallWait > 0 || this.bench) return;
     for (const d of this.drifters) {
       if ((d.state !== 'idle' && d.state !== 'chase') || d.didSteal || p.carried <= 0) continue;
       if (dXZ(d.pos, p.pos) > w.drifter_contact_m) continue;
@@ -629,6 +632,7 @@ export class Game {
 
   // 10. scheduled spawns (new entities act from the next tick)
   #spawns() {
+    if (this.bench) return;
     const w = this.w, st = this.simTick;
     if (this.randomMotes && st % w.mote_every_ticks === 0 && this.motes.length < w.motes_cap) this.#spawnRandomMote();
     if (this.randomShades) {
@@ -663,6 +667,7 @@ export class Game {
   // 11. after every update of the tick: no flames -> lost (always first); at dawn (time up) -> won
   //     dawn_survived if lit lanterns >= ceil(0.6 x total), else lost dawn. No early win (Ticket-03).
   #checkEnd() {
+    if (this.bench) return;
     const p = this.player, t = this.t;
     let result = null, reason = null;
     if (p.flames <= 0) { result = 'lost'; reason = 'no_flames'; }
