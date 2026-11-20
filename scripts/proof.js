@@ -1,7 +1,7 @@
-// Phase 2 proof: runs tests/scenarios/* through the real headless_cmd from game.contract.json,
+// Phase 3 proof: runs tests/scenarios/* through the real headless_cmd from game.contract.json,
 // checks each expectation, writes raw outputs + RESULTS.md to docs/proof/phase-2/.
 // Usage: npm run proof   (exit 1 if any check fails). Outputs are generated, never hand-edited.
-// (Phase 1 evidence in docs/proof/phase-1/ belongs to tag phase-1 and its v1.0 numbers.)
+// (docs/proof/phase-1 and phase-2 belong to their tags and older contract versions.)
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -10,7 +10,7 @@ import { join } from 'node:path';
 const root = new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1');
 const contract = JSON.parse(readFileSync(join(root, 'game.contract.json'), 'utf8'));
 const T = contract.tuning;
-const PHASE = 'phase-2';
+const PHASE = 'phase-3';
 const outRel = join('docs', 'proof', PHASE);
 mkdirSync(join(root, outRel, 'runs'), { recursive: true });
 const sc = (f) => join('tests', 'scenarios', f);
@@ -47,15 +47,53 @@ function check(req, how, r, fn) {
 const expect = (cond, msg) => { if (!cond) throw new Error(msg); };
 
 // ---- Phase 1 behaviour with standard numbers (regression) ----
-check('P1 regression: pickup 10, deposit, light, win all_lit, score per deposit', 'N1: 4 lanterns preset lit, walk over 10 motes, interact at L5',
-  run('win_all_lit', { scenario: 'win_all_lit.scenario.json', inputs: 'win_all_lit.inputs.json', ticks: 600 }), (r) => {
+check('P3 dawn win: pickup 10, light L5, survive to dawn with 3/5 lit; dawn bonus', 'N1: L1, L2 preset lit, walk over 10 motes, light L5, time 3 s',
+  run('dawn_win', { scenario: 'dawn_win.scenario.json', inputs: 'dawn_win.inputs.json', ticks: 600 }), (r) => {
     expect(ev(r, 'mote_picked').length === 10, `picked ${ev(r, 'mote_picked').length}`);
+    const lit = ev(r, 'lantern_lit')[0];
+    expect(lit && lit.data.relight === false, 'L5 not lit');
     const go = ev(r, 'game_over')[0];
-    expect(go?.data.result === 'won' && go.data.reason === 'all_lit', 'no win');
-    const left = Math.floor((300 * 60 - go.tick) / 60);
-    const want = 10 * T.score.per_mote + T.score.per_lantern + left * T.score.per_second_left + T.flames * T.score.per_flame_left;
+    expect(go?.tick === 180 && go.data.result === 'won' && go.data.reason === 'dawn_survived', JSON.stringify(go));
+    const last = snapAt(r, 180);
+    const dawn = last.lanterns.filter((l) => l.lit).reduce((a, l) => a + T.score.per_lit_at_dawn + Math.floor(l.fuel), 0);
+    const want = 10 * T.score.per_mote + T.score.per_lantern + dawn + T.flames * T.score.per_flame_left;
     expect(r.end.score === want, `score ${r.end.score} != ${want}`);
-    return `won at tick ${go.tick}; score ${r.end.score} = 10x10 + 100 + ${left}s x2 + 3x50`;
+    return `lit L5 at tick ${lit.tick}, won dawn_survived at 180; score ${r.end.score} = 10x5 + 100 + lit-at-dawn ${dawn} + 3x50`;
+  });
+check('P3 fuel: lantern runs out (lantern_out, deposited 0), relight costs 5, +40', 'N1: L1 fuel 2, carried 5, interact at tick 131',
+  run('fuel_out_relight', { scenario: 'fuel_out_relight.scenario.json', inputs: 'fuel_out_relight.inputs.json', ticks: 200 }), (r) => {
+    const out = ev(r, 'lantern_out')[0], lit = ev(r, 'lantern_lit')[0];
+    expect(out?.tick === 120, `out ${JSON.stringify(out)}`);
+    const s = snapAt(r, 120).lanterns[0];
+    expect(!s.lit && s.fuel === 0 && s.deposited === 0 && s.ever_lit, JSON.stringify(s));
+    expect(lit?.data.relight === true && ev(r, 'deposit')[0].data.amount === 5 && r.end.score === 5 * 5 + 40, JSON.stringify(lit));
+    return `out at tick 120 (2 fuel / 1 per s), relit at ${lit.tick} with 5 motes, relit_count ${snapAt(r, 140).lanterns[0].relit_count}, score ${r.end.score}`;
+  });
+check('P3 refuel: used = ceil((100 - fuel)/10), capped at 100', 'N1: L1 fuel 40, carried 10, interact at tick 1',
+  run('refuel', { scenario: 'refuel.scenario.json', inputs: 'refuel.inputs.json', ticks: 20 }), (r) => {
+    const f = ev(r, 'refuel')[0];
+    expect(f && f.data.amount === 7 && f.data.fuel === 100, JSON.stringify(f));
+    return `refuel ${JSON.stringify(f.data)} (39.98 -> 100 uses 7); carried 10 -> ${snapAt(r, 10).player.carried}`;
+  });
+check('P3 drain: wander shade walks to the weak lantern, drains 5/s, fuel_drain every 60 ticks, lamp goes out', 'N1: L1 fuel 20, S1 3 m away, Mây far',
+  run('drain', { scenario: 'drain.scenario.json', ticks: 400, every: 10 }), (r) => {
+    const d = ev(r, 'fuel_drain');
+    expect(d.length >= 2 && d[1].tick - d[0].tick === 60 && d[0].data.shade_id === 'S1', JSON.stringify(d.slice(0, 2)));
+    const out = ev(r, 'lantern_out')[0];
+    expect(out, 'never went out');
+    expect(snapAt(r, Math.ceil((out.tick + 1) / 10) * 10).shades[0].state !== 'drain', 'still draining an unlit lantern');
+    return `drain from ~tick ${d[0].tick - 60}, fuel_drain at ${d.map((e) => e.tick + ':' + e.data.fuel).join(' ')}, out at ${out.tick} (decay alone would last until tick 1200)`;
+  });
+check('P3 capacity: 10 + 2 per successful light', 'N1: light L1 with 10 motes',
+  run('capacity', { scenario: 'capacity.scenario.json', inputs: 'capacity.inputs.json', ticks: 70 }), (r) => {
+    expect(snapAt(r, 0).player.capacity === 10 && snapAt(r, 10).player.capacity === 12, 'capacity');
+    return 'capacity 10 at tick 0 -> 12 after lighting L1';
+  });
+check('P3 threshold night 2: 4/6 lit at dawn wins, 3/6 loses', 'N2: time 1 s, preset lit lanterns',
+  run('threshold_n2_win', { night: 2, scenario: 'threshold_n2_win.scenario.json', ticks: 100 }), (r) => {
+    const lose = run('threshold_n2_lose', { night: 2, scenario: 'threshold_n2_lose.scenario.json', ticks: 100 });
+    expect(ev(r, 'game_over')[0].data.reason === 'dawn_survived' && ev(lose, 'game_over')[0].data.reason === 'dawn', 'threshold');
+    return `4 lit -> dawn_survived (score ${r.end.score}); 3 lit -> dawn (score ${lose.end.score})`;
   });
 check('P1 regression: shade hit, drop floor(n/2), 90-tick invuln, lose no_flames', 'N1: 2 shades 3 m away, carried 4, stand still',
   run('lose_no_flames', { scenario: 'lose_no_flames.scenario.json', ticks: 3000 }), (r) => {
@@ -145,10 +183,10 @@ check('Drifter: chase, steal 3, flee; pulse makes it drop the loot', 'N2: carrie
 check('Pause: tick runs, sim_tick/time frozen, state paused', 'N1: pause at tick 31, resume at 151',
   run('pause', { inputs: 'pause.inputs.json', ticks: 200 }), (r) => {
     const s100 = snapAt(r, 100), s200 = snapAt(r, 200);
-    expect(s100.state === 'paused' && s100.sim_tick === 30 && s100.time_left_s === 299.5, JSON.stringify(s100).slice(0, 120));
+    expect(s100.state === 'paused' && s100.sim_tick === 30 && s100.time_left_s === T.night1_duration_s - 0.5, JSON.stringify(s100).slice(0, 120));
     expect(s200.sim_tick === 80, `sim ${s200.sim_tick}`);
     expect(JSON.stringify(r.events.map((e) => [e.tick, e.name]).filter(([, n]) => n === 'paused' || n === 'resumed')) === '[[31,"paused"],[151,"resumed"]]', 'events');
-    return 'tick 100: paused, sim_tick 30, time 299.5; tick 200: sim_tick 80';
+    return `tick 100: paused, sim_tick 30, time ${T.night1_duration_s - 0.5}; tick 200: sim_tick 80`;
   });
 const windRun = run('wind_night3', { night: 3, scenario: 'immortal.scenario.json', ticks: 2200, every: 60 });
 check('Night 3 wind: 5 s gust every 30 s', 'N3 default, 2200 ticks', windRun, (r) => {
@@ -172,8 +210,8 @@ for (const n of [1, 2, 3]) {
   });
 }
 const perf = run('perf_night3_full', { night: 3, scenario: 'immortal.scenario.json', ticks: 21600, every: 1 });
-check('Full night (21600 ticks) <= 30 s', 'N3, snapshot every tick', perf, (r) => {
-  expect(r.end.ticks === 21600 && r.ms <= 30000, `${r.end.ticks} ticks in ${r.ms} ms`);
+check('Full night 3 (P3: 300 s = 18000 ticks) <= 30 s', 'N3, snapshot every tick', perf, (r) => {
+  expect(r.end.ticks === 18000 && r.ms <= 30000, `${r.end.ticks} ticks in ${r.ms} ms`);
   return `${r.end.ticks} ticks in ${Math.round(r.ms)} ms`;
 });
 check('Malformed scenario (bad shade state) -> exit 2', 'scenario state "angry"',
