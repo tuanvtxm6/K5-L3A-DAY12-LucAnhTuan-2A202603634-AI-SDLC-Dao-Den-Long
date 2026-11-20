@@ -25,6 +25,17 @@ test('AC-palette: standard colors within 10% per RGB channel', () => {
   assert.match(world, /hemi\.intensity = 0\.15 \+ 0\.55 \* k/, 'ambient = 0.15 + 0.55 x progress');
 });
 
+test('AC-a11y (P4): no CSS font smaller than 18 px; large text 22.5 px; rebinding covers all actions; reduce motion guards', () => {
+  const html = readFileSync(new URL('../web/index.html', import.meta.url), 'utf8');
+  const sizes = [...html.matchAll(/font(?:-size)?:\s*([0-9.]+)(px|rem)/g)].map(([, v, u]) => (u === 'rem' ? Number(v) * 18 : Number(v)));
+  assert.ok(sizes.length > 10);
+  assert.ok(sizes.every((px) => px >= 18), `too small: ${sizes.filter((px) => px < 18)}`);
+  assert.match(html, /html:has\(body\.big\) \{ font-size: 22\.5px; \}/);
+  for (const a of ['up', 'down', 'left', 'right', 'jump', 'dash', 'interact', 'pulse', 'pause']) assert.match(main, new RegExp(`\\['${a}', '`));
+  assert.match(main, /if \(settings\.reduceMotion\) return;/); // flash
+  assert.match(main, /shakeT > 0 && !settings\.reduceMotion/);
+});
+
 test('AC-colorblind (P3): rim/eyes #00B3FF, warning white + ⚠, unlit lanterns squashed + torn, low fuel blinks 1 Hz', () => {
   const html = readFileSync(new URL('../web/index.html', import.meta.url), 'utf8');
   assert.match(world, /rimColorblind: 0x00b3ff/);

@@ -23,7 +23,8 @@ function headless(args) {
 }
 
 test('contract file: version, commands, tuning matches the code', () => {
-  assert.equal(contract.contract_version, '1.2'); // P3: Ticket-03
+  assert.equal(contract.contract_version, '1.3'); // P4: Ticket-04
+  for (const k of ['bench_cmd', 'soak_cmd']) assert.equal(typeof contract[k], 'string', k);
   for (const k of ['team', 'build_cmd', 'run_cmd', 'headless_cmd']) assert.equal(typeof contract[k], 'string');
   assert.deepEqual(contract.tuning, TUNING);
 });
