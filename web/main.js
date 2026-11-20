@@ -19,10 +19,12 @@ const world = new World(renderer);
 addEventListener('resize', () => { renderer.setSize(innerWidth, innerHeight); world.resize(); });
 
 // ---------- settings (persisted) ----------
-const settings = { volume: 0.6, sensitivity: 1 };
+const settings = { volume: 0.6, sensitivity: 1, colorblind: false };
 try { Object.assign(settings, JSON.parse(localStorage.getItem('ddl-settings') || '{}')); } catch { /* private mode */ }
 const saveSettings = () => { try { localStorage.setItem('ddl-settings', JSON.stringify(settings)); } catch { /* ignore */ } };
 audio.setVolume(settings.volume);
+const applyColorblind = () => { document.body.classList.toggle('cb', settings.colorblind); world.setColorblind(settings.colorblind); };
+applyColorblind();
 
 // ---------- story ----------
 const INTRO = {
@@ -57,7 +59,7 @@ function intro(n) {
   audio.resume(); audio.startMusic();
   screen = 'intro'; night = n;
   show(`<h2>Đêm ${n}: ${MAPS[n].name}</h2><p class="quote">Ông Đăng: "${INTRO[n]}"</p>
-    <p>${MAPS[n].lanterns.length} Đèn Lồng Lớn · ${TUNING[MAPS[n].duration_key]} giây tới bình minh</p>`, [['Vào đêm (Enter)', () => start(n)]]);
+    <p>Giữ ít nhất <b>${Math.ceil(TUNING.win_ratio * MAPS[n].lanterns.length)}/${MAPS[n].lanterns.length}</b> Đèn Lồng sáng tới bình minh (${TUNING[MAPS[n].duration_key]} giây). Đèn cạn dầu sẽ tắt; châm thêm đom đóm để giữ lửa.</p>`, [['Vào đêm (Enter)', () => start(n)]]);
 }
 function start(n) {
   const seedParam = params.get('seed');
@@ -70,7 +72,8 @@ function result() {
   const won = game.state === 'won';
   audio.sfx[won ? 'win' : 'lose']();
   if (won) wonScores[night] = game.score;
-  const why = { all_lit: 'Mọi đèn đã sáng!', no_flames: 'Mây đã hết Ngọn Lửa.', dawn: 'Bình minh tới mà đảo vẫn chưa sáng.' }[game.result.reason];
+  const litNow = game.lanterns.filter((L) => L.lit).length, need = game.litNeeded();
+  const why = { dawn_survived: `Bình minh tới, ${litNow}/${game.lanterns.length} đèn vẫn sáng!`, no_flames: 'Mây đã hết Ngọn Lửa.', dawn: `Bình minh tới nhưng chỉ còn ${litNow}/${game.lanterns.length} đèn sáng (cần ${need}).` }[game.result.reason];
   if (won && night === 3) {
     screen = 'dawn';
     show(`<h1>Bình Minh</h1><p>Ba hòn đảo đã sáng lại. Ông Đăng mỉm cười bên bến cảng.</p>
@@ -93,10 +96,12 @@ function openSettings(back) {
   settingsBack = back; screen = 'settings';
   show(`<h2>Cài đặt</h2>
     <label>Âm lượng <input type="range" id="vol" min="0" max="1" step="0.05" value="${settings.volume}"></label>
-    <label>Độ nhạy chuột <input type="range" id="sens" min="0.2" max="3" step="0.1" value="${settings.sensitivity}"></label>`,
+    <label>Độ nhạy chuột <input type="range" id="sens" min="0.2" max="3" step="0.1" value="${settings.sensitivity}"></label>
+    <label><input type="checkbox" id="cb" ${settings.colorblind ? 'checked' : ''}> Bảng màu dễ phân biệt (mù màu)</label>`,
   [['Xong', () => (settingsBack === 'pause' ? pause() : menu())]]);
   $('vol').oninput = (e) => { settings.volume = Number(e.target.value); audio.setVolume(settings.volume); saveSettings(); };
   $('sens').oninput = (e) => { settings.sensitivity = Number(e.target.value); saveSettings(); };
+  $('cb').onchange = (e) => { settings.colorblind = e.target.checked; saveSettings(); applyColorblind(); };
 }
 
 // ---------- input ----------
@@ -185,16 +190,19 @@ function frame(now) {
 }
 
 // ---------- HUD ----------
-const cells = Array.from({ length: TUNING.carry_capacity }, () => { const c = document.createElement('div'); c.className = 'cell'; $('motes').appendChild(c); return c; });
+const cells = Array.from({ length: TUNING.capacity_max }, () => { const c = document.createElement('div'); c.className = 'cell'; $('motes').appendChild(c); return c; });
+{ const t = document.createElement('span'); t.id = 'capText'; $('motes').appendChild(t); }
 const v3 = new THREE.Vector3();
 function drawHud(lit) {
   const p = game.player;
   $('flames').innerHTML = Array.from({ length: TUNING.flames }, (_, i) => `<div class="flame ${i < p.flames ? '' : 'out'}"></div>`).join('');
   const tl = game.timeLeftTicks() / HZ;
-  $('timer').textContent = `${String(Math.floor(tl / 60)).padStart(2, '0')}:${String(Math.floor(tl % 60)).padStart(2, '0')}`;
+  $('timer').textContent = `${tl <= 30 && settings.colorblind ? '⚠ ' : ''}${String(Math.floor(tl / 60)).padStart(2, '0')}:${String(Math.floor(tl % 60)).padStart(2, '0')}`;
   $('timer').classList.toggle('danger', tl <= 30);
-  $('right').innerHTML = `<span>Đèn <b>${lit}/${game.lanterns.length}</b></span><span>Điểm <b>${game.score}</b>${total() ? ` · Tổng <b>${total()}</b>` : ''}</span>`;
-  cells.forEach((c, i) => c.classList.toggle('on', i < p.carried));
+  $('right').innerHTML = `<span>Đèn sáng <b>${lit}/${game.lanterns.length}</b> · cần <b>${game.litNeeded()}</b></span><span>Điểm <b>${game.score}</b>${total() ? ` · Tổng <b>${total()}</b>` : ''}</span>`;
+  const cap = game.capacity();
+  cells.forEach((c, i) => { c.classList.toggle('on', i < p.carried); c.style.display = i < cap ? '' : 'none'; });
+  $('capText').textContent = `${p.carried}/${cap}`;
   const cd = (label, key, ticks, full, ok) => {
     const pct = full ? Math.round((ticks / full) * 100) : 0;
     return `<div class="cd ${ticks === 0 && ok ? 'ready' : ''}" style="--p:${pct}%"><div>${ticks > 0 ? (ticks / HZ).toFixed(1) : label}<small>${key}</small></div></div>`;
@@ -205,14 +213,15 @@ function drawHud(lit) {
   $('charm').textContent = `Bùa Gió ${(p.charm / HZ).toFixed(1)}s`;
 
   // hint near an unlit lantern
-  const nearL = game.lanterns.find((L) => !L.lit && Math.hypot(L.pos[0] - p.pos[0], L.pos[2] - p.pos[2]) <= TUNING.interact_radius);
+  const nearL = game.lanterns.find((L) => (!L.lit || L.fu < 6000) && Math.hypot(L.pos[0] - p.pos[0], L.pos[2] - p.pos[2]) <= TUNING.interact_radius);
   $('hint').style.display = nearL ? '' : 'none';
-  if (nearL) $('hint').textContent = `E — Nạp ánh sáng (${nearL.deposited}/${TUNING.lantern_cost})`;
+  if (nearL) $('hint').textContent = nearL.lit ? `E — Châm dầu (${Math.floor(nearL.fu / 60)}/${TUNING.fuel_max})`
+    : `E — Nạp ánh sáng (${nearL.deposited}/${nearL.everLit ? TUNING.relight_cost : TUNING.lantern_cost})`;
 
   // arrow toward the nearest unlit lantern when it is off-screen
   let target = null, best = Infinity;
   for (const L of game.lanterns) {
-    if (L.lit) continue;
+    if (L.lit && L.fu >= TUNING.low_fuel_threshold * 60) continue; // unlit or running low
     const d = Math.hypot(L.pos[0] - p.pos[0], L.pos[2] - p.pos[2]);
     if (d < best) { best = d; target = L; }
   }

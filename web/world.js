@@ -9,6 +9,7 @@ export const C = {
   lit: 0xffb347, core: 0xffe9b0, off: 0x5b5f6e, moteCore: 0xfff6c2, moteHalo: 0xffe58a,
   shade: 0x120a1a, rim: 0x7a3cff, stunned: 0x3a3450, coat: 0xe8e2d0, scarf: 0xc8102e,
   gold: 0xf2c14e, drifter: 0x8fa3b8,
+  rimColorblind: 0x00b3ff, // Ticket-03 colour-blind mode: shade rim + eyes
 };
 const lambert = (color, extra = {}) => new THREE.MeshLambertMaterial({ color, ...extra });
 const basic = (color, extra = {}) => new THREE.MeshBasicMaterial({ color, ...extra });
@@ -164,8 +165,18 @@ export class World {
     light.position.y = 3.6;
     const ring = new THREE.Mesh(new THREE.RingGeometry(TUNING.safe_radius - 0.12, TUNING.safe_radius, 48), basic(C.lit, { transparent: true, opacity: 0 }));
     ring.rotation.x = -Math.PI / 2; ring.position.y = 0.04;
-    g.add(pole, lamp, core, cap, light, ring);
-    g.userData = { lampMat, core, light, ring };
+    // Ticket-03: torn paper on unlit lanterns (readable without colour) + fuel bar above lit ones
+    const tear = new THREE.Group(); // tears on both faces so they show from any side
+    for (const z of [0.52, -0.52]) {
+      const rip = new THREE.Mesh(new THREE.PlaneGeometry(0.35, 0.5), basic(0x111111, { side: THREE.DoubleSide }));
+      rip.position.set(0.12, 3.55, z); rip.rotation.z = 0.6; tear.add(rip);
+    }
+    const bar = new THREE.Group(); bar.position.y = 4.85;
+    const barBg = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 0.16), basic(0x222233, { transparent: true, opacity: 0.8 }));
+    const barFill = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 0.12), basic(C.lit));
+    barFill.position.z = 0.01; bar.add(barBg, barFill);
+    g.add(pole, lamp, core, cap, light, ring, tear, bar);
+    g.userData = { lampMat, lamp, core, light, ring, tear, bar, barFill };
     return g;
   }
 
@@ -181,13 +192,13 @@ export class World {
     const g = new THREE.Group();
     const body = new THREE.Mesh(GEO.shade, lambert(C.shade, { emissive: C.shade }));
     body.scale.set(1, 1.15, 1);
-    const rim = new THREE.Mesh(GEO.shade, basic(C.rim, { side: THREE.BackSide }));
+    const rim = new THREE.Mesh(GEO.shade, basic(this.cb ? C.rimColorblind : C.rim, { side: THREE.BackSide }));
     rim.scale.set(1.12, 1.28, 1.12);
-    const eyeMat = basic(0xd8c8ff);
+    const eyeMat = basic(this.cb ? C.rimColorblind : C.rim);
     const e1 = new THREE.Mesh(GEO.eye, eyeMat), e2 = new THREE.Mesh(GEO.eye, eyeMat);
     e1.position.set(-0.24, 0.22, 0.68); e2.position.set(0.24, 0.22, 0.68);
     g.add(rim, body, e1, e2);
-    g.userData = { body };
+    g.userData = { body, rim, eyeMat };
     return g;
   }
 
@@ -227,6 +238,11 @@ export class World {
 
   pulse() { this.pulseFx = 1; }
 
+  setColorblind(on) {
+    this.cb = on;
+    for (const g of this.pools.shades.values()) { const c = on ? C.rimColorblind : C.rim; g.userData.rim.material.color.set(c); g.userData.eyeMat.color.set(c); }
+  }
+
   // ---------- per frame ----------
   update(game, t, camYaw) {
     const p = game.player;
@@ -247,12 +263,22 @@ export class World {
     let lit = 0;
     for (const L of game.lanterns) {
       const u = this.lanterns.get(L.id).userData;
-      const f = L.lit ? 1 : L.deposited / TUNING.lantern_cost;
-      u.lampMat.color.set(L.lit ? C.lit : C.off);
-      u.lampMat.emissiveIntensity = L.lit ? 1.6 + Math.sin(t * 3) * 0.15 : f * 0.7;
-      u.core.visible = L.lit;
-      u.light.intensity = L.lit ? 40 : f * 6;
-      u.ring.material.opacity = L.lit ? 0.35 : 0;
+      const cost = L.everLit ? TUNING.relight_cost : TUNING.lantern_cost;
+      const fuel = L.lit ? L.fu / 60 : 0, low = L.lit && fuel < TUNING.low_fuel_threshold;
+      const blinkOff = low && Math.floor(t * 2) % 2 === 1; // 1 Hz slow blink when fuel < 30
+      const f = L.lit ? (blinkOff ? 0.25 : 1) : L.deposited / cost;
+      u.lampMat.color.set(L.lit && !blinkOff ? C.lit : C.off);
+      u.lampMat.emissiveIntensity = L.lit ? (blinkOff ? 0.3 : 1.6 + Math.sin(t * 3) * 0.15) : f * 0.7;
+      u.core.visible = L.lit && !blinkOff;
+      u.light.intensity = L.lit ? (blinkOff ? 8 : 40) : f * 6;
+      u.ring.material.opacity = L.lit && !low ? 0.35 : 0; // no safe ring under 30 fuel
+      u.lamp.scale.y = L.lit ? 1 : 0.8; u.lamp.position.y = L.lit ? 3.6 : 3.51; // unlit = squashed 20%
+      u.tear.visible = !L.lit;
+      u.bar.visible = L.lit && !blinkOff;
+      u.bar.quaternion.copy(this.camera.quaternion);
+      u.barFill.scale.x = Math.max(0.001, fuel / TUNING.fuel_max);
+      u.barFill.position.x = -0.7 * (1 - u.barFill.scale.x);
+      u.barFill.material.color.set(low ? 0xff8a3d : C.lit);
       if (L.lit) lit++;
     }
     const k = lit / game.lanterns.length;

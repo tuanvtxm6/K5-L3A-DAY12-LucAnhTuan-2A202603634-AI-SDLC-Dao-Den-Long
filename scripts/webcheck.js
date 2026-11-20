@@ -89,21 +89,24 @@ const { result: ps } = await send('Page.captureScreenshot', { format: 'png' });
 writeFileSync(join(outDir, 'pause.png'), Buffer.from(ps.data, 'base64'));
 await step('pause menu buttons', `[...document.querySelectorAll('#card button')].map(b => b.textContent)`, ['Tiếp tục', 'Chơi lại Đêm', 'Cài đặt', 'Về menu']);
 await step('settings saved', `(() => { ${click('Cài đặt')}; const v = document.getElementById('vol'); v.value = '0.3'; v.dispatchEvent(new Event('input'));
-  const s = document.getElementById('sens'); s.value = '1.7'; s.dispatchEvent(new Event('input')); ${click('Xong')}; return __ddl.screen; })()`, 'pause');
+  const s = document.getElementById('sens'); s.value = '1.7'; s.dispatchEvent(new Event('input'));
+  const cb = document.getElementById('cb'); cb.checked = true; cb.dispatchEvent(new Event('change')); ${click('Xong')}; return __ddl.screen; })()`, 'pause');
 await go('?night=1');
-await step('settings survive a reload', `JSON.parse(localStorage.getItem('ddl-settings'))`, { volume: 0.3, sensitivity: 1.7 });
+await step('settings survive a reload (incl. colour-blind mode applied)', `[JSON.parse(localStorage.getItem('ddl-settings')), document.body.classList.contains('cb'), getComputedStyle(document.body).getPropertyValue('--danger').trim()]`,
+  [{ volume: 0.3, sensitivity: 1.7, colorblind: true }, true, '#ffffff']);
+await evaluate(`localStorage.removeItem('ddl-settings')`);
 await go('?night=1&autostart=1&seed=3');
 await step('HUD: hint near lantern + timer red at <= 30 s', `(() => { const g = __ddl.game; g.player.pos = [0, 0, 23.5]; g.startTicks = g.simTick + 30 * 60;
   return new Promise(r => setTimeout(() => r([document.getElementById('hint').textContent, document.getElementById('timer').classList.contains('danger')]), 300)); })()`,
 ['E — Nạp ánh sáng (0/10)', true]);
-await step('win night 1 -> result -> next night intro', `(() => { __ddl.game.lanterns.forEach(L => { L.lit = true; }); return new Promise(r => setTimeout(() => {
+await step('win night 1 -> result -> next night intro', `(() => { __ddl.game.lanterns.forEach(L => { L.lit = true; L.fu = 6000; }); __ddl.game.startTicks = __ddl.game.simTick + 1; return new Promise(r => setTimeout(() => {
   const txt = document.querySelector('#card').textContent; ${click('Sang Đêm 2')}; r([/Đêm 1 đã sáng/.test(txt), __ddl.screen, document.querySelector('#card h2').textContent]); }, 300)); })()`,
 [true, 'intro', 'Đêm 2: Đảo Cau']);
 await go('?night=2&autostart=1&seed=3');
 await step('lose (dawn) -> retry same night', `(() => { const g = __ddl.game; g.startTicks = g.simTick + 1; return new Promise(r => setTimeout(() =>
   r([__ddl.screen, [...document.querySelectorAll('#card button')][0].textContent]), 300)); })()`, ['result', 'Chơi lại Đêm 2 (Enter)']);
 await go('?night=3&autostart=1&seed=3');
-await step('win night 3 -> Bình Minh with total score', `(() => { __ddl.game.lanterns.forEach(L => { L.lit = true; }); return new Promise(r => setTimeout(() =>
+await step('win night 3 -> Bình Minh with total score', `(() => { __ddl.game.lanterns.forEach(L => { L.lit = true; L.fu = 6000; }); __ddl.game.startTicks = __ddl.game.simTick + 1; return new Promise(r => setTimeout(() =>
   r([__ddl.screen, document.querySelector('#card h1').textContent, /Tổng điểm: \\d+/.test(document.querySelector('#card').textContent)]), 300)); })()`, ['dawn', 'Bình Minh', true]);
 const { result: ds } = await send('Page.captureScreenshot', { format: 'png' });
 writeFileSync(join(outDir, 'dawn.png'), Buffer.from(ds.data, 'base64'));
@@ -113,6 +116,13 @@ await step('Night 3 ramp meshes slope like the sim surface (both ends within 0.2
   return ramps.length === 2 && ramps.every((m) => { m.updateWorldMatrix(true, false);
     return [-1, 1].every((e) => { const v = new m.position.constructor(e * (m.userData.ramp.len / 2 - 0.3), 0.15, 0); m.localToWorld(v);
       return Math.abs(v.y - __ddl.game.map.surface(v.x, v.z)) < 0.25; }); }); })()`, true);
+// P3 visual: lit (full), low-fuel (blinking) and out lanterns side by side
+await go('?night=1&autostart=1&seed=3&at=0,0,12&yaw=0');
+await evaluate(`(() => { const g = __ddl.game; g.shades = []; const [L1, L2, L5] = [0, 1, 4].map((i) => g.lanterns[i]);
+  L1.pos = [-4, 0, 22]; L2.pos = [0, 0, 24]; L5.pos = [4, 0, 22]; L1.lit = true; L1.fu = 6000; L1.everLit = true;
+  L2.lit = true; L2.fu = 1200; L2.everLit = true; L5.lit = false; L5.everLit = true; __ddl.world.build(g); })()`);
+await sleep(700);
+{ const { result: ls } = await send('Page.captureScreenshot', { format: 'png' }); writeFileSync(join(outDir, 'lanterns-fuel.png'), Buffer.from(ls.data, 'base64')); }
 report.flow = flow;
 writeFileSync(join(outDir, 'webcheck.json'), JSON.stringify(report, null, 2) + '\n');
 console.log(JSON.stringify(report, null, 2));
