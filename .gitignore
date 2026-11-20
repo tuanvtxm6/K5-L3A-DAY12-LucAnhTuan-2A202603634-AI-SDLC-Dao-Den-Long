@@ -1,5 +1,7 @@
-node_modules/
-.env
 *.log
-out.jsonl
+.env
+data/
+dist/
 docs/proof/*/runs/perf_*.jsonl
+node_modules/
+out.jsonl

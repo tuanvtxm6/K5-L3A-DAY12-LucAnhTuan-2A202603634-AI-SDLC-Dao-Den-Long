@@ -1,4 +1,4 @@
-// Phase 3 proof: runs tests/scenarios/* through the real headless_cmd from game.contract.json,
+// Phase 4 proof (same scenarios as Phase 3 + regression): runs tests/scenarios/* through the real headless_cmd from game.contract.json,
 // checks each expectation, writes raw outputs + RESULTS.md to docs/proof/phase-2/.
 // Usage: npm run proof   (exit 1 if any check fails). Outputs are generated, never hand-edited.
 // (docs/proof/phase-1 and phase-2 belong to their tags and older contract versions.)
@@ -10,7 +10,7 @@ import { join } from 'node:path';
 const root = new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1');
 const contract = JSON.parse(readFileSync(join(root, 'game.contract.json'), 'utf8'));
 const T = contract.tuning;
-const PHASE = 'phase-3';
+const PHASE = 'phase-4';
 const outRel = join('docs', 'proof', PHASE);
 mkdirSync(join(root, outRel, 'runs'), { recursive: true });
 const sc = (f) => join('tests', 'scenarios', f);
