@@ -57,3 +57,29 @@ Công cụ: Claude Code (VS Code extension), model Claude Opus 5.5.
   - Chỉ xem 4 ảnh chụp có chọn lọc.
   - Không dùng subagent.
 - Cách tiết kiệm: đọc lab board một lần rồi trích ra text (13 KB thay vì 180 KB HTML). Không dùng subagent. Test được chạy với output đã lọc (`grep`/`tail`) thay vì log đầy đủ. Ảnh chụp chỉ để kiểm tra phần hiển thị.
+
+## Phase 3
+
+**Prompt chính:** nội dung Ticket-03 được dán vào (change request: đèn có nhiên liệu, thắng lúc bình minh).
+
+**Cách làm:**
+- Phase này chỉ có khoảng 30 phút, nên sửa `sim.js` bằng các Edit nhỏ thay vì viết lại.
+- Thứ tự: tuning → mô hình đèn → AI Bóng Mực → luật thắng.
+- Chạy test cũ trước để thấy test nào bị luật mới làm sai (8 test), rồi sửa từng cái kèm ghi chú `P3:`.
+- Viết 15 test mới → mutation check → proof → web (thanh dầu, mù màu) → kiểm tra trên Chrome → ADR, CHANGELOG.
+
+### Những lần AI sai và cách phát hiện
+
+| # | Sai gì | Phát hiện bằng | Sửa / chỉnh harness |
+|---|---|---|---|
+| 16 | Một phép thay chuỗi trong script không khớp nhưng không báo lỗi, nên test mù màu **không được thêm** mà vẫn tưởng đã thêm | Số test là 69 thay vì 70 | Thêm lại bằng Edit; kiểm tra số test sau mỗi lần thêm |
+| 17 | Script chụp ảnh đổi vị trí đèn trong sim sau khi mesh đã dựng xong, nên ảnh chỉ có 1 đèn | Xem ảnh | Gọi `world.build()` sau khi đặt trạng thái |
+| 18 | Pha "tắt" của nhịp nháy và vết rách trên đèn tắt gần như không thấy | Xem ảnh | Đổi màu đèn ở pha tắt; thêm vết rách ở cả hai mặt. Vẫn còn khó thấy ở xa (đã ghi) |
+| 19 | Proof còn để cứng `time_left 299.5` của Đêm 300 s | Proof FAIL | Tính theo `night1_duration_s` |
+| 20 | Mutant "hết choáng xét theo khoảng cách" không bị test bắt | Mutation check | Phân tích thì đây là mutant **tương đương** (bước 8 cùng tick cho kết quả như nhau), nên ghi chú thay vì viết test vô nghĩa. AGENTS.md thêm quy tắc giải thích mutant tương đương |
+
+### Token / chi phí
+
+- Đo bằng `/usage` khi kết thúc Phase 3 (2026-11-20): **53 % quota phiên**, **15 % quota tuần**. Phase 3 tốn khoảng **19 điểm % quota phiên** (từ 34 % lên 53 %) và **3 điểm % quota tuần**, ít hơn Phase 2 (23 điểm) dù đây là change request, nhờ sửa bằng Edit nhỏ thay vì viết lại.
+- `/usage` cho thấy 83 % chi phí 24 giờ qua vẫn đến từ việc không `/clear`, vì cả 3 phase chạy chung một phiên với ngữ cảnh ngày càng dài. Đây là điểm cần sửa nhất cho Phase 4: mở phiên mới, chỉ nạp AGENTS.md, CHANGELOG và spec Phase 3.
+- Cách tiết kiệm: không đọc lại file lớn, chỉ Edit đúng hàm cần đổi. Output test luôn được lọc. Webcheck có `FLOW_ONLY=1` để bỏ qua bước đo FPS khi chỉ cần kiểm tra luồng.
