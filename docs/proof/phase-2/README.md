@@ -13,10 +13,10 @@ npm run webcheck
 | Unit + CLI test | **54/54 pass** | Luật Phase 1 với số chuẩn, mọi tính năng Ticket-02, contract v1.1, bảng màu, âm thanh | [tests/](../../../tests/) |
 | Scenario headless | **20/20 pass** | Mỗi tính năng mới ≥ 1 scenario chạy qua đúng `headless_cmd`; tất định ở cả 3 Đêm | [RESULTS.md](RESULTS.md), [runs/](runs/) |
 | Mutation check | 7/7 mutant bị bắt | Cố tình làm hỏng: nhặt bỏ qua độ cao, bùa vẫn có hồi chiêu lướt, recoil/spawning vẫn đánh được, lướt lại khi đang lướt, hồi sinh sớm 1 tick, rơi bị chặn bởi bất tử, pause không đóng băng logic. Hai mutant (lướt lại, rơi khi bất tử) **lọt qua lần đầu**, nên đã thêm test | [ai-log](../../notes/ai-log.md) |
-| Chrome thật (CDP) | 10/10 bước flow pass, 0 lỗi console | Chuỗi Đêm, pause, cài đặt được lưu, HUD đỏ ≤ 30 s, nhắc nạp đèn, thắng/thua/Bình Minh | [webcheck.json](webcheck.json) |
-| FPS 1280×720 | 164,6 / 165,1 / 165,1 FPS trung bình (Đêm 1/2/3), frame tệ nhất 30,5 ms | Có bot chạy, nhảy, lướt, tỏa sáng liên tục trong 10 s mỗi Đêm. Chrome headless, ANGLE D3D11, RTX 4050 Laptop, i5-13500HX | [webcheck.json](webcheck.json) |
+| Chrome thật (CDP) | 11/11 bước flow pass, 0 lỗi console | Chuỗi Đêm, pause, cài đặt được lưu, HUD đỏ ≤ 30 s, nhắc nạp đèn, thắng/thua/Bình Minh, mesh dốc Đêm 3 khớp độ cao trong sim | [webcheck.json](webcheck.json) |
+| FPS 1280×720 | 164,5 / 165,0 / 164,7 FPS trung bình (Đêm 1/2/3), frame tệ nhất 30,4 ms | Có bot chạy, nhảy, lướt, tỏa sáng liên tục trong 10 s mỗi Đêm. Chrome headless, ANGLE D3D11, RTX 4050 Laptop, i5-13500HX | [webcheck.json](webcheck.json) |
 | Headless perf | 21 600 tick (Đêm 3 đầy đủ, snapshot mỗi tick) trong 578 ms | Giới hạn của ticket là ≤ 30 s | RESULTS #19 |
-| Ảnh | Menu, Đêm 1/2/3, Đêm 3 lúc đang chơi, pause, Bình Minh | Bản đồ, HUD, bảng màu | `*.png` |
+| Ảnh | Menu, Đêm 1/2/3, Đêm 3 lúc đang chơi, dốc Đêm 3 nhìn từ chân dốc, pause, Bình Minh | Bản đồ, HUD, bảng màu | `*.png` |
 
 ## Chưa kiểm chứng / giới hạn
 

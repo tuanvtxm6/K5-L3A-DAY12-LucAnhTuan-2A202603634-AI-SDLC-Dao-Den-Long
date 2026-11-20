@@ -4,23 +4,23 @@
   "gpu": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4050 Laptop GPU (0x000028E1) Direct3D11 vs_5_0 ps_5_0, D3D11)",
   "bench": {
     "night1": {
-      "avg_fps": 164.59835401645987,
-      "worst_frame_ms": 30.5,
-      "frames": 1646,
+      "avg_fps": 164.49835501644984,
+      "worst_frame_ms": 30.399999999999636,
+      "frames": 1645,
       "w": 1280,
       "h": 720
     },
     "night2": {
-      "avg_fps": 165.1,
-      "worst_frame_ms": 6.799999999999272,
+      "avg_fps": 164.99770142511645,
+      "worst_frame_ms": 12,
       "frames": 1651,
       "w": 1280,
       "h": 720
     },
     "night3": {
-      "avg_fps": 165.0966980660387,
-      "worst_frame_ms": 6.799999999999272,
-      "frames": 1651,
+      "avg_fps": 164.7,
+      "worst_frame_ms": 12.399999999999636,
+      "frames": 1647,
       "w": 1280,
       "h": 720
     }
@@ -103,6 +103,11 @@
         "Bình Minh",
         true
       ],
+      "ok": true
+    },
+    {
+      "name": "Night 3 ramp meshes slope like the sim surface (both ends within 0.25 m)",
+      "got": true,
       "ok": true
     }
   ]

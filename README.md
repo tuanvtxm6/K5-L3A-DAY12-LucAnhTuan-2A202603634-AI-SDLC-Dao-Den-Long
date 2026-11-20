@@ -71,7 +71,7 @@ node src/headless.js --seed 1 --night 2 --ticks 600 --out out.jsonl \
 | Phase | Kết quả | Chi tiết |
 |---|---|---|
 | 1 | 25/25 test, 7/7 scenario (số Phase 1, tag `phase-1`) | [docs/proof/phase-1/](docs/proof/phase-1/README.md) |
-| 2 | 54/54 test, 20/20 scenario, 10/10 bước flow trên Chrome, ~165 FPS ở 1280×720 | [docs/proof/phase-2/](docs/proof/phase-2/README.md) |
+| 2 | 54/54 test, 20/20 scenario, 11/11 bước flow trên Chrome, ~165 FPS ở 1280×720 | [docs/proof/phase-2/](docs/proof/phase-2/README.md) |
 
 ## Sáng tạo của tôi
 

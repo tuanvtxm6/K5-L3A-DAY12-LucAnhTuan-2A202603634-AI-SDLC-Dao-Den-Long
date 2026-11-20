@@ -44,6 +44,7 @@ Công cụ: Claude Code (VS Code extension), model Claude Opus 5.5.
 | 12 | Cảnh Đêm 3 quá tối (ambient 0,15 theo chuẩn) | Xem ảnh chụp | Tăng ánh trăng và đèn của Mây (A35) |
 | 13 | Proof ghi "state recoil" mà không kiểm | Tự rà output | Thêm assert thật cho trạng thái |
 | 14 | Lần chạy perf ghi file JSONL 70 MB vào thư mục proof | `du` trước khi commit | Thêm `.gitignore` cho `runs/perf_*` |
+| 15 | Dốc Đêm 3 hiển thị **ngược**: mesh cao ở phía ngoài, trong khi sim cao ở phía trong. Luật vẫn đúng nên vẫn leo được. Lỗi lọt qua vì ảnh chụp không nhìn từ phía chân dốc và không có kiểm tra hình học | **Người chơi thử** sau khi đã gắn tag `phase-2` | Viết bước webcheck so độ cao hai đầu mesh với `map.surface` (FAIL trước, PASS sau), đổi dấu góc nghiêng. Thêm `?at=&yaw=` để chụp đúng chỗ. Gắn lại tag `phase-2` vào commit sửa, trước hạn (SUBMISSION §5 cho phép) |
 
 ### Token / chi phí
 
