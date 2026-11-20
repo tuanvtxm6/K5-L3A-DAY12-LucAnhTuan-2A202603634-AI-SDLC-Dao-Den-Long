@@ -1,5 +1,5 @@
-// Headless runner per Test Contract v1.0.
-// Used by: node src/headless.js --seed <int> --night 1 [--scenario f.json] [--inputs f.json]
+// Headless runner per Test Contract v1.1.
+// Used by: node src/headless.js --seed <int> --night <1|2|3> [--scenario f.json] [--inputs f.json]
 //                      --ticks <int> --out out.jsonl [--snapshot-every 10]
 import { readFileSync } from 'node:fs';
 import { Game, DEFAULT_INPUT } from './core/sim.js';
@@ -35,7 +35,7 @@ export function parseArgs(argv) {
     inputs: a.inputs,
   };
   if (!opts.out) throw new UsageError('--out is required');
-  if (opts.night !== 1) throw new UsageError('only --night 1 exists in this build');
+  if (![1, 2, 3].includes(opts.night)) throw new UsageError('--night must be 1, 2 or 3');
   if (opts.ticks < 0) throw new UsageError('--ticks must be >= 0');
   if (opts.snapshotEvery <= 0) throw new UsageError('--snapshot-every must be > 0');
   return opts;
@@ -48,14 +48,15 @@ function readJsonFile(path, label) {
 }
 
 export function run(opts) {
-  const scenario = opts.scenario ? validateScenario(readJsonFile(opts.scenario, 'scenario')) : null;
+  const scenario = opts.scenario ? validateScenario(readJsonFile(opts.scenario, 'scenario'), opts.night) : null;
   const frames = opts.inputs ? validateInputs(readJsonFile(opts.inputs, 'inputs')) : [];
 
-  const game = new Game({ seed: opts.seed, scenario });
+  const game = new Game({ seed: opts.seed, night: opts.night, scenario });
   const lines = [JSON.stringify(game.snapshot())];
+  lines.push(JSON.stringify({ type: 'event', tick: 0, name: 'night_start', data: { night: opts.night } }));
   const cur = { ...DEFAULT_INPUT, move: [0, 0] };
   let fi = 0;
-  for (let k = 0; k < opts.ticks && game.state === 'playing'; k++) {
+  for (let k = 0; k < opts.ticks && game.state !== 'won' && game.state !== 'lost'; k++) {
     while (fi < frames.length && frames[fi].tick === k) Object.assign(cur, frames[fi++]);
     for (const ev of game.step(cur)) lines.push(JSON.stringify(ev));
     if (game.tick % opts.snapshotEvery === 0) lines.push(JSON.stringify(game.snapshot()));

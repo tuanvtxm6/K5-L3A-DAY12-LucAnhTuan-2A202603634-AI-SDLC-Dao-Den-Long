@@ -1,7 +1,0 @@
-{ "frames": [
-  { "tick": 0, "move": [0, 1], "cam_yaw_deg": 0 },
-  { "tick": 240, "move": [1, 0.5], "cam_yaw_deg": 45 },
-  { "tick": 600, "pulse": true }, { "tick": 601, "pulse": false },
-  { "tick": 900, "move": [-1, -1], "jump": true }, { "tick": 901, "jump": false },
-  { "tick": 1500, "move": [0, 0] }
-] }
