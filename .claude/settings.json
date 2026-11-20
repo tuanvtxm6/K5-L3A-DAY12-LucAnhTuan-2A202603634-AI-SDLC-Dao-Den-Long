@@ -1,0 +1,11 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          { "type": "command", "command": "node scripts/stop-gate.js", "timeout": 60 }
+        ]
+      }
+    ]
+  }
+}
