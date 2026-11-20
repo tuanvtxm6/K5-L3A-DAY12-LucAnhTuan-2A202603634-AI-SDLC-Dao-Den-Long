@@ -7,11 +7,11 @@ jobs:
         os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with: { node-version: 22 }
       - run: npm install
       - run: npm test
       - run: npm run proof
       - name: proof outputs match the committed ones (determinism across machines)
-        run: git diff --exit-code -- docs/proof/phase-1/runs
+        run: git diff --exit-code -- docs/proof/phase-2/runs
