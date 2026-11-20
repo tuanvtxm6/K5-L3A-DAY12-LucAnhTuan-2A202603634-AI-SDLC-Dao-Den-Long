@@ -1,12 +1,12 @@
 # AGENTS.md — Đảo Đèn Lồng
 
-3D game (Three.js) + deterministic headless mode graded by **Test Contract v1.1** (Ticket-02). Lab rules: `docs/lab/`. Phase specs + assumptions: `docs/notes/phase-N-*.md` (read the current phase's spec before changing rules).
+3D game (Three.js) + deterministic headless mode graded by **Test Contract v1.2** (Ticket-03). Design decisions: `docs/adr/`. Breaking changes: `CHANGELOG.md`. Lab rules: `docs/lab/`. Phase specs + assumptions: `docs/notes/phase-N-*.md` (read the current phase's spec before changing rules).
 
 ## Commands
 - Install: `npm install` · Play: `npm start` → http://localhost:5173 (`?night=2&autostart=1&seed=7` jumps in)
 - Tests: `npm test` (must be green before you stop — a Stop hook enforces it)
-- Proof: `npm run proof` → regenerates `docs/proof/phase-2/` (never hand-edit outputs)
-- Browser check (server running): `npm run webcheck` → screenshots, flow checks, FPS into `docs/proof/phase-2/`
+- Proof: `npm run proof` → regenerates `docs/proof/phase-3/` (never hand-edit outputs; older phase folders belong to their tags)
+- Browser check (server running): `npm run webcheck` → screenshots, flow checks, FPS into `docs/proof/phase-3/` (`FLOW_ONLY=1` skips FPS/screens)
 - Headless: `node src/headless.js --seed 1 --night <1|2|3> --ticks 600 --out out.jsonl [--scenario f] [--inputs f]`
 
 ## Layout
@@ -21,8 +21,11 @@
 - Tick model: step k reads input of tick k → state k+1; events carry the contract tick. Paused ticks advance `tick`, not `sim_tick`.
 - Timers count down in step 2, so "N ticks" means the effect ends exactly N ticks later — write tests that count it.
 - Distances on XZ unless the ticket says 3D (pulse). "Within r" is `<=`.
-- Shade states are exactly: spawning, wander, chase, recoil, stunned.
+- Shade states are exactly: spawning, wander, chase, recoil, stunned, drain.
+- Lantern fuel is an integer count of 1/60 units (`L.fu`); round only on output. Safe zone = `hasZone()` (lit && fuel >= 30), never read `lit` directly for zones.
+- No early win: the night ends at dawn (`dawn_survived` / `dawn`) or on `no_flames` (checked first).
 - Changing a rule → update tests + `docs/notes/phase-N-spec.md` (assumption A# or regression row) in the same change.
 - If a test fails, first check the test's own tick arithmetic (most Phase 2 failures were there), then the code. Never weaken an assertion to pass.
-- After green tests on a new rule, mutate the rule once and confirm a test goes red.
+- A rule REPLACED by a ticket: rewrite/delete the old test with a `P<N>:` comment + a row in the phase spec's Regression table and CHANGELOG. Never `skip`.
+- After green tests on a new rule, mutate the rule once and confirm a test goes red (if no test can tell, explain why it is an equivalent mutant).
 - No secrets / `.env` in the repo.

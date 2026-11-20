@@ -14,4 +14,4 @@ jobs:
       - run: npm test
       - run: npm run proof
       - name: proof outputs match the committed ones (determinism across machines)
-        run: git diff --exit-code -- docs/proof/phase-2/runs
+        run: git diff --exit-code -- docs/proof/phase-3/runs
