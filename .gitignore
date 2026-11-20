@@ -5,3 +5,4 @@ dist/
 docs/proof/*/runs/perf_*.jsonl
 node_modules/
 out.jsonl
+/*.mp4

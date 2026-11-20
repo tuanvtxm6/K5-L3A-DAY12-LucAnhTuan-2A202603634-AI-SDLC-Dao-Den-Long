@@ -1,6 +1,6 @@
 # Đảo Đèn Lồng
 
-> **Video demo:** _(link sẽ được thêm khi quay xong, đính kèm Release v1.0.0)_ · **Phiên bản:** 1.0.0 (Contract v1.3) · [CHANGELOG](CHANGELOG.md) · [ADR](docs/adr/) · [Retro](docs/notes/retro.md) · Đề lab: [docs/lab/](docs/lab/LAB-README.md)
+> **Video demo (3:12):** [demo.mp4](https://github.com/tuanvtxm6/K5-L3A-DAY12-LucAnhTuan-2A202603634-AI-SDLC-Dao-Den-Long/releases/download/v1.0.0/demo.mp4) · **Release:** [v1.0.0](https://github.com/tuanvtxm6/K5-L3A-DAY12-LucAnhTuan-2A202603634-AI-SDLC-Dao-Den-Long/releases/tag/v1.0.0) · **Phiên bản:** 1.0.0 (Contract v1.3) · [CHANGELOG](CHANGELOG.md) · [ADR](docs/adr/) · [Retro](docs/notes/retro.md) · Đề lab: [docs/lab/](docs/lab/LAB-README.md)
 
 Game 3D góc nhìn thứ ba viết bằng Three.js. Mây, người giữ đèn nhỏ tuổi, gom đom đóm để thắp và **giữ** các Đèn Lồng Lớn sáng tới bình minh trên 3 hòn đảo, đồng thời né Bóng Mực và Gió Lạc. Toàn bộ luật chơi nằm trong một module JS thuần ([src/core/sim.js](src/core/sim.js)). Bản web, chế độ headless, soak test và cảnh benchmark đều dùng chung module đó.
 

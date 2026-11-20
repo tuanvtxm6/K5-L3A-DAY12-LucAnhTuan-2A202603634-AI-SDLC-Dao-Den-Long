@@ -31,5 +31,5 @@ Cấu hình máy đo: Windows 11 (10.0.26200), Intel i5-13500HX, RTX 4050 Laptop
 
 - **Máy chấm** của giảng viên có thể yếu hơn nhiều (GPU tích hợp). Cảnh bench có khoảng 1 000 draw call (mỗi Bóng Mực 4 mesh). Chưa đo trên GPU tích hợp, và chưa tối ưu bằng instancing.
 - **Dockerfile chưa được build thử**, vì Docker daemon trên máy dev không chạy.
-- **Video demo** do người làm bài tự quay; máy dev không có ffmpeg để quay tự động. Kịch bản quay: [docs/demo/DEMO-SCRIPT.md](../../demo/DEMO-SCRIPT.md).
+- **Video demo** (3 phút 12 giây, 177 MB) được người làm bài tự quay theo [kịch bản](../../demo/DEMO-SCRIPT.md), đính kèm Release: [demo.mp4](https://github.com/tuanvtxm6/K5-L3A-DAY12-LucAnhTuan-2A202603634-AI-SDLC-Dao-Den-Long/releases/download/v1.0.0/demo.mp4). File vượt 100 MB nên không commit vào repo.
 - `peak_mem_mb` trên Windows là working set, lấy mẫu mỗi 2 s, nên có thể bỏ sót đỉnh ngắn.
