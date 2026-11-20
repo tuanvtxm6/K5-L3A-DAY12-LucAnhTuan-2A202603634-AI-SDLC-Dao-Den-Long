@@ -1,4 +1,4 @@
-// Validation of contract input files (v1.1). Any problem -> ValidationError (headless exits 2).
+// Validation of contract input files (v1.2). Any problem -> ValidationError (headless exits 2).
 import { MAPS } from './maps.js';
 
 export class ValidationError extends Error {}
@@ -43,7 +43,7 @@ export function validateInputs(obj) {
   });
 }
 
-const SHADE_STATES = ['spawning', 'wander', 'chase', 'recoil', 'stunned'];
+const SHADE_STATES = ['spawning', 'wander', 'chase', 'recoil', 'stunned', 'drain'];
 const DRIFTER_STATES = ['idle', 'chase', 'flee', 'removed'];
 
 export function validateScenario(sc, night = 1) {
@@ -52,7 +52,7 @@ export function validateScenario(sc, night = 1) {
     const p = sc.player, at = 'scenario.player';
     if (!isObj(p)) fail(`${at}: expected an object`);
     optVec3(p, 'pos', at);
-    for (const k of ['carried', 'flames', 'invuln_ticks', 'dash_cd_ticks', 'pulse_cd_ticks', 'charm_ticks']) optInt(p, k, at);
+    for (const k of ['carried', 'flames', 'invuln_ticks', 'dash_cd_ticks', 'pulse_cd_ticks', 'charm_ticks', 'successful_lights']) optInt(p, k, at);
   }
   for (const k of ['random_motes', 'random_shades', 'random_drifters', 'wind_enabled']) optBool(sc, k, 'scenario');
   if (sc.motes !== undefined) {
@@ -84,7 +84,10 @@ export function validateScenario(sc, night = 1) {
       extra?.(o, at);
     });
   };
-  idList(sc.shades, 'shades', SHADE_STATES);
+  idList(sc.shades, 'shades', SHADE_STATES, (o, at) => {
+    if (o.target_lantern_id !== undefined && (typeof o.target_lantern_id !== 'string' || !o.target_lantern_id)) fail(`${at}.target_lantern_id: non-empty string`);
+    if (o.state === 'drain' && !o.target_lantern_id) fail(`${at}: state drain needs target_lantern_id`);
+  });
   idList(sc.drifters, 'drifters', DRIFTER_STATES, (o, at) => optInt(o, 'stolen', at));
   if (sc.charms !== undefined) {
     if (!Array.isArray(sc.charms)) fail('scenario.charms: must be an array');
@@ -106,6 +109,9 @@ export function validateScenario(sc, night = 1) {
       optVec3(L, 'pos', at);
       optInt(L, 'deposited', at);
       optBool(L, 'lit', at);
+      optBool(L, 'ever_lit', at);
+      optInt(L, 'relit_count', at);
+      if (L.fuel !== undefined && !(isNum(L.fuel) && L.fuel >= 0 && L.fuel <= 100)) fail(`${at}.fuel: number 0..100`);
     });
   }
   if (sc.time_left_s !== undefined && !(isNum(sc.time_left_s) && sc.time_left_s >= 0)) {
