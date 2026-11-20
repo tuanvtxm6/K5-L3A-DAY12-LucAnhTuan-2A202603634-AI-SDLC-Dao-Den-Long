@@ -23,7 +23,7 @@ function headless(args) {
 }
 
 test('contract file: version, commands, tuning matches the code', () => {
-  assert.equal(contract.contract_version, '1.1');
+  assert.equal(contract.contract_version, '1.2'); // P3: Ticket-03
   for (const k of ['team', 'build_cmd', 'run_cmd', 'headless_cmd']) assert.equal(typeof contract[k], 'string');
   assert.deepEqual(contract.tuning, TUNING);
 });
@@ -68,7 +68,7 @@ test('contract v1.0 example under v1.1 numbers: event ticks follow the tick mode
   assert.deepEqual(ev[2].data, { stunned_ids: ['S1'] });
   const s0 = r.lines[0];
   assert.equal(s0.tick, 0); assert.equal(s0.motes_active, 1); assert.equal(s0.score, 0);
-  assert.deepEqual(s0.lanterns[0], { id: 'L1', pos: [0, 0, 25], lit: false, deposited: 0 });
+  assert.deepEqual(s0.lanterns[0], { id: 'L1', pos: [0, 0, 25], lit: false, deposited: 0, fuel: 0, ever_lit: false, relit_count: 0 }); // P3: v1.2 fields
 });
 
 test('stops at game over with end state', () => {
@@ -105,16 +105,17 @@ test('bad CLI usage -> non-zero exit', () => {
   assert.notEqual(headless(['--seed', '1', '--night', '4', '--ticks', '10']).code, 0);
 });
 
-test('nights 2 and 3 run; full night 3 (21600 ticks) finishes well under 30 s', () => {
+test('nights 2 and 3 run; full night 3 (P3: 300 s = 18000 ticks) finishes well under 30 s', () => {
   const r2 = headless(['--seed', '1', '--night', '2', '--ticks', '60']);
   assert.equal(r2.code, 0, r2.stderr);
   assert.equal(r2.lines[0].night, 2);
   const sc = file({ player: { flames: 100000 } });
   const t0 = Date.now();
-  const r3 = headless(['--seed', '1', '--night', '3', '--scenario', sc, '--ticks', '21600', '--snapshot-every', '1']);
+  const r3 = headless(['--seed', '1', '--night', '3', '--scenario', sc, '--ticks', '21600', '--snapshot-every', '1']); // runs to dawn
   const ms = Date.now() - t0;
   assert.equal(r3.code, 0, r3.stderr);
-  assert.deepEqual(r3.lines.at(-1).ticks, 21600);
+  assert.deepEqual(r3.lines.at(-1).ticks, 18000);
+  assert.ok(r3.lines.some((l) => l.name === 'game_over' && l.tick === 18000));
   assert.ok(ms < 30000, `took ${ms} ms`);
 });
 

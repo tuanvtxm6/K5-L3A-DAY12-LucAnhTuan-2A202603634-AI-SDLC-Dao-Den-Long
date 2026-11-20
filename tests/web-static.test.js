@@ -25,6 +25,16 @@ test('AC-palette: standard colors within 10% per RGB channel', () => {
   assert.match(world, /hemi\.intensity = 0\.15 \+ 0\.55 \* k/, 'ambient = 0.15 + 0.55 x progress');
 });
 
+test('AC-colorblind (P3): rim/eyes #00B3FF, warning white + ⚠, unlit lanterns squashed + torn, low fuel blinks 1 Hz', () => {
+  const html = readFileSync(new URL('../web/index.html', import.meta.url), 'utf8');
+  assert.match(world, /rimColorblind: 0x00b3ff/);
+  assert.match(html, /body\.cb \{ --danger: #ffffff; \}/);
+  assert.match(main, /settings\.colorblind \? '⚠ '/);
+  assert.match(world, /u\.lamp\.scale\.y = L\.lit \? 1 : 0\.8/);
+  assert.match(world, /u\.tear\.visible = !L\.lit/);
+  assert.match(world, /Math\.floor\(t \* 2\) % 2 === 1; \/\/ 1 Hz/);
+});
+
 test('AC-audio: music + every required sound effect exists and is wired', () => {
   for (const k of ['mote_picked', 'lantern_lit', 'pulse', 'player_hit', 'jump', 'dash', 'win', 'lose', 'shade_spawned', 'tick']) {
     assert.match(audio, new RegExp(`\\b${k}: \\(\\)`), `sfx ${k}`);

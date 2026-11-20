@@ -312,23 +312,20 @@ test('AC-wind (night 3): every 30 s a 5 s gust pushes 2 m/s; snapshot wind', () 
   assert.equal(n1.snapshot().wind.active, false);
 });
 
-test('AC-end: all lit on the last tick still wins; lighting evicts a touching shade so it cannot hit', () => {
-  const lanterns = ['L1', 'L2', 'L3', 'L4'].map((id) => ({ id, lit: true }));
-  lanterns.push({ id: 'L5', pos: [0, 0, 1], deposited: 9 });
-  const g = game({ player: { carried: 1 }, lanterns, time_left_s: 1 });
-  runFor(g, 59);
-  const ev = g.step(inp({ interact: true }));
-  assert.deepEqual(ev.at(-1).data, { result: 'won', reason: 'all_lit' });
+// P3: the "all_lit" half was REPLACED (Ticket-03 §3); eviction-on-light is still a rule and stays tested.
+test('AC-end: lighting evicts a touching shade so it cannot hit; no_flames ends the night at once', () => {
+  const lanterns = [{ id: 'L5', pos: [0, 0, 1], deposited: 9 }];
   const h = game({ player: { carried: 1, flames: 1 }, lanterns, shades: [{ pos: [0.5, 1, 0.5] }] });
-  assert.deepEqual(h.step(inp({ interact: true })).at(-1).data, { result: 'won', reason: 'all_lit' });
-  const k = game({ player: { flames: 1 }, lanterns, shades: [{ pos: [0.5, 1, 0.5] }] });
+  const ev = h.step(inp({ interact: true }));
+  assert.ok(names(ev).includes('lantern_lit') && !names(ev).includes('player_hit'));
+  const k = game({ player: { flames: 1 }, shades: [{ pos: [0.5, 1, 0.5] }] });
   assert.deepEqual(k.step(inp()).at(-1).data, { result: 'lost', reason: 'no_flames' });
 });
 
-test('AC-nights: 6 lanterns on night 2, 7 on night 3, durations 330/360 s, flames full', () => {
+test('AC-nights: 6 lanterns on night 2, 7 on night 3, durations 270/300 s (P3), flames full', () => {
   const n2 = new Game({ night: 2 }).snapshot(), n3 = new Game({ night: 3 }).snapshot();
-  assert.equal(n2.lanterns.length, 6); assert.equal(n2.time_left_s, 330); assert.equal(n2.night, 2);
-  assert.equal(n3.lanterns.length, 7); assert.equal(n3.time_left_s, 360);
+  assert.equal(n2.lanterns.length, 6); assert.equal(n2.time_left_s, 270); assert.equal(n2.night, 2); // P3: 270/300 s
+  assert.equal(n3.lanterns.length, 7); assert.equal(n3.time_left_s, 300);
   assert.deepEqual(n3.lanterns[0].pos, [0, 6, 6]);
   assert.equal(n3.player.flames, 3);
 });

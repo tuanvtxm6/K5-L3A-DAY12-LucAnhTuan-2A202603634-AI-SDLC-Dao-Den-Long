@@ -52,18 +52,20 @@ test('pickup: XZ <= pickup_radius and height diff <= 1.5 m, capped by capacity 1
   assert.equal(T.carry_capacity, 10);
 });
 
-test('deposit: min(carried, missing) into nearest unlit lantern; +10 per mote, +100 when lit', () => {
+test('deposit: min(carried, missing) into nearest unlit lantern; P3: +5 per mote, +100 first light', () => {
   const g = game({ player: { carried: 6 }, lanterns: [{ id: 'L1', pos: [0, 0, 2] }] });
   let ev = press(g, 'interact');
   assert.deepEqual(ev.map((e) => [e.name, e.data]), [['deposit', { lantern_id: 'L1', amount: 6, deposited: 6 }]]);
-  assert.equal(g.score, 60);
+  assert.equal(g.score, 30);
   g.player.carried = 9;
   ev = press(g, 'interact');
   assert.deepEqual(names(ev), ['deposit', 'lantern_lit']);
   assert.equal(ev[0].data.amount, 4);
   assert.equal(g.player.carried, 5);
-  assert.equal(g.score, 100 + 100);
-  assert.equal(runFor(g, 5, inp({ interact: true })).length, 0, 'holding does not repeat');
+  assert.equal(g.score, 50 + 100);
+  // P3: a lit lantern that is not full now takes a refuel (Ticket-03 §1 replaced "lit lanterns take nothing")
+  const more = runFor(g, 5, inp({ interact: true }));
+  assert.deepEqual(more.map((e) => [e.name, e.data.amount]), [['refuel', 1]], 'one press = one refuel, holding does not repeat');
 });
 
 test('deposit: interact_radius 2.0, nearest lantern, tie -> smaller id', () => {
@@ -75,17 +77,16 @@ test('deposit: interact_radius 2.0, nearest lantern, tie -> smaller id', () => {
   assert.equal(press(g, 'interact')[0].data.lantern_id, 'L2');
 });
 
-test('win: last lantern lit -> won at end of tick, time + flame bonus; preset lit gives no points', () => {
+// P3: "win as soon as all lanterns are lit" was REPLACED by the dawn rule (Ticket-03 §3); see phase3.test.js AC-win.
+test('lighting the last lantern no longer ends the night; preset lit gives no points', () => {
   const lanterns = ['L1', 'L2', 'L3', 'L4'].map((id) => ({ id, lit: true }));
   lanterns.push({ id: 'L5', pos: [0, 0, 1], deposited: T.lantern_cost - 1 });
   const g = game({ player: { carried: 1 }, lanterns, time_left_s: 100 });
   assert.equal(g.score, 0);
   const ev = g.step(inp({ interact: true }));
-  assert.deepEqual(names(ev), ['deposit', 'lantern_lit', 'game_over']);
-  assert.deepEqual(ev[2].data, { result: 'won', reason: 'all_lit' });
-  const left = Math.floor((100 * 60 - 1) / 60);
-  assert.equal(g.score, 10 + 100 + left * 2 + 3 * 50);
-  assert.equal(g.step(inp()).length, 0, 'no steps after game over');
+  assert.deepEqual(names(ev), ['deposit', 'lantern_lit']);
+  assert.equal(g.state, 'playing');
+  assert.equal(g.score, 5 + 100);
 });
 
 test('shade hit: -1 flame, drop floor(carried/2) on the ground, 90-tick invulnerability, lose at 0 (P2: drops stay on ground)', () => {
@@ -176,13 +177,13 @@ test('dawn: time runs out -> lost/dawn; time_left_s = duration - sim_ticks/60', 
   assert.deepEqual(ev.at(-1).data, { result: 'lost', reason: 'dawn' });
 });
 
-test('default night 1 map: standard lanterns, start, 300 s, 20 motes on distinct spawn points', () => {
+test('default night 1 map: standard lanterns, start, 240 s, 20 motes on distinct spawn points', () => {
   const g = new Game({ seed: 1 });
   const s = g.snapshot();
   assert.deepEqual(s.lanterns.map((l) => [l.id, l.pos]), [
     ['L1', [0, 0, 25]], ['L2', [23.8, 0, 7.7]], ['L3', [14.7, 0, -20.2]], ['L4', [-14.7, 0, -20.2]], ['L5', [-23.8, 0, 7.7]]]);
   assert.deepEqual(s.player.pos, [0, 0, 0]);
-  assert.equal(s.time_left_s, 300);
+  assert.equal(s.time_left_s, 240); // P3: night 1 = 240 s
   assert.equal(s.motes.length, 20);
   assert.equal(new Set(s.motes.map((m) => m.pos.join())).size, 20);
   assert.ok(s.motes.every((m) => m.kind === 'random' && m.ttl_s === null));
