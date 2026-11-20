@@ -83,3 +83,31 @@ Công cụ: Claude Code (VS Code extension), model Claude Opus 5.5.
 - Đo bằng `/usage` khi kết thúc Phase 3 (2026-11-20): **53 % quota phiên**, **15 % quota tuần**. Phase 3 tốn khoảng **19 điểm % quota phiên** (từ 34 % lên 53 %) và **3 điểm % quota tuần**, ít hơn Phase 2 (23 điểm) dù đây là change request, nhờ sửa bằng Edit nhỏ thay vì viết lại.
 - `/usage` cho thấy 83 % chi phí 24 giờ qua vẫn đến từ việc không `/clear`, vì cả 3 phase chạy chung một phiên với ngữ cảnh ngày càng dài. Đây là điểm cần sửa nhất cho Phase 4: mở phiên mới, chỉ nạp AGENTS.md, CHANGELOG và spec Phase 3.
 - Cách tiết kiệm: không đọc lại file lớn, chỉ Edit đúng hàm cần đổi. Output test luôn được lọc. Webcheck có `FLOW_ONLY=1` để bỏ qua bước đo FPS khi chỉ cần kiểm tra luồng.
+
+## Phase 4
+
+**Prompt chính:** nội dung Ticket-04 được dán vào (bench, soak, bảng xếp hạng, a11y, phát hành).
+
+**Cách làm:**
+- Core trước: cờ bench trong sim, `bench.js` (cảnh chuẩn + thống kê), `leaderboard.js`, soak.
+- Sau đó: bench chạy Chrome thật qua CDP → server có API bảng xếp hạng → UI (bảng xếp hạng, đổi phím, phụ đề, giảm chuyển động, cỡ chữ) → webcheck thêm 10 bước.
+- Tiếp theo: test Phase 4 + mutation → chạy bench/soak thật → gói Release → tài liệu và retro.
+
+### Những lần AI sai và cách phát hiện
+
+| # | Sai gì | Phát hiện bằng | Sửa / chỉnh harness |
+|---|---|---|---|
+| 21 | Hai lần ghi file bằng heredoc trong bash bị lỗi trích dẫn (chuỗi có backtick và regex) | Lệnh lỗi | Ghi khối code bằng Write rồi ghép bằng script node |
+| 22 | Lấy mẫu RSS bằng PowerShell `Get-CimInstance` mỗi 0,5 s làm giật khung hình | `p1_low_fps` thấp bất thường (94) | Lọc chỉ lấy chrome.exe, giãn ra 2 s → 136,5 |
+| 23 | Tác vụ nền báo server đã dừng nhưng tiến trình vẫn giữ cổng 5173 | `EADDRINUSE` | Tìm PID qua `netstat` rồi tắt |
+| 24 | `package.js` gọi `tar` của Git Bash (GNU, không tạo được zip) | Lỗi `zip ENOENT` | Dùng `System32\tar.exe` trên Windows |
+| 25 | Phụ đề trùng nội dung chồng lên nhau, đẩy mất cảnh báo cạn dầu (lỗi UX thật) | webcheck FAIL | Phụ đề trùng chỉ gia hạn thời gian hiển thị |
+| 26 | Test tính sai hạng (13 thay vì 11, vì quên rằng chỉ giữ 10 mục) | Test đỏ | Sửa test |
+| 27 | Mutant "bench vẫn sinh thực thể" sống, vì cảnh chuẩn đã tắt sẵn cờ random | Mutation check | Thêm test bench trên cảnh mặc định |
+| 28 | Bóng Mực trong bench chuyển sang chase khi thấy Mây (luật A22) | Chạy thử cảnh bench | Bench giữ wander (C1) + mutation test |
+
+### Token / chi phí
+
+- Đo bằng `/usage` khi kết thúc Phase 4 (2026-11-20): **75 % quota phiên**, **17 % quota tuần**, 100 % Opus, cache hit 99 %. Phase 4 tốn khoảng **22 điểm % quota phiên** (từ 53 % lên 75 %) và **2 điểm % quota tuần**.
+- **Tổng cả lab:** khoảng 75 % một quota phiên 5 giờ (11 + 23 + 19 + 22 điểm), và quota tuần tăng từ 9 % lên 17 % qua Phase 2–4. `/usage` báo 94 % chi phí 24 giờ qua đến từ việc không `/clear`: cả 4 phase chạy chung một phiên. Đây là bài học lớn nhất về token (xem [retro](retro.md)).
+- Cách tiết kiệm: tái dùng webcheck và proof sẵn có; `FLOW_ONLY=1` khi chỉ cần kiểm tra luồng; chạy bench 5 s để thử trước khi chạy thật 30 s.

@@ -1,0 +1,224 @@
+{
+  "url": "http://127.0.0.1:51280",
+  "errors": [],
+  "gpu": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4050 Laptop GPU (0x000028E1) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+  "bench": {
+    "night1": {
+      "avg_fps": 164.69505914822554,
+      "worst_frame_ms": 24.299999999999272,
+      "frames": 1647,
+      "w": 1280,
+      "h": 720
+    },
+    "night2": {
+      "avg_fps": 165.1009394363382,
+      "worst_frame_ms": 6.800000000001091,
+      "frames": 1652,
+      "w": 1280,
+      "h": 720
+    },
+    "night3": {
+      "avg_fps": 165.1009394363382,
+      "worst_frame_ms": 7,
+      "frames": 1652,
+      "w": 1280,
+      "h": 720
+    }
+  },
+  "flow": [
+    {
+      "name": "menu -> night intro shows island + Ông Đăng",
+      "got": [
+        "intro",
+        "Đêm 1: Đảo Bến",
+        true
+      ],
+      "ok": true
+    },
+    {
+      "name": "intro -> play",
+      "got": "play",
+      "ok": true
+    },
+    {
+      "name": "Esc pauses, logic frozen",
+      "got": [
+        "pause",
+        true
+      ],
+      "ok": true
+    },
+    {
+      "name": "pause menu buttons",
+      "got": [
+        "Tiếp tục",
+        "Chơi lại Đêm",
+        "Cài đặt",
+        "Về menu"
+      ],
+      "ok": true
+    },
+    {
+      "name": "settings saved",
+      "got": "pause",
+      "ok": true
+    },
+    {
+      "name": "settings survive a reload (incl. colour-blind mode applied)",
+      "got": [
+        {
+          "volume": 0.3,
+          "sensitivity": 1.7,
+          "colorblind": true
+        },
+        true,
+        "#ffffff"
+      ],
+      "ok": true
+    },
+    {
+      "name": "HUD: hint near lantern + timer red at <= 30 s",
+      "got": [
+        "E — Nạp ánh sáng (0/10)",
+        true
+      ],
+      "ok": true
+    },
+    {
+      "name": "win night 1 -> result -> next night intro",
+      "got": [
+        true,
+        "intro",
+        "Đêm 2: Đảo Cau"
+      ],
+      "ok": true
+    },
+    {
+      "name": "lose (dawn) -> name form + retry same night",
+      "got": [
+        "result",
+        true,
+        [
+          "Lưu điểm (Enter)",
+          "Chơi lại Đêm 2",
+          "Về menu"
+        ]
+      ],
+      "ok": true
+    },
+    {
+      "name": "leaderboard: invalid name rejected",
+      "got": [
+        "result",
+        true
+      ],
+      "ok": true
+    },
+    {
+      "name": "leaderboard: Vietnamese name saved on disk via API, highlighted, ISO time with offset",
+      "got": [
+        "leaderboard",
+        "Mây_01",
+        [
+          [
+            "Mây_01",
+            0,
+            true
+          ]
+        ]
+      ],
+      "ok": true
+    },
+    {
+      "name": "menu has a Bảng xếp hạng screen",
+      "got": [
+        "leaderboard",
+        2
+      ],
+      "ok": true
+    },
+    {
+      "name": "rebinding: duplicate key flagged, reset restores defaults, saved",
+      "got": [
+        "⚠ Phím E đang trùng: Nhảy và Tương tác",
+        2,
+        "KeyE",
+        "Space",
+        ""
+      ],
+      "ok": true
+    },
+    {
+      "name": "rebinding offers all 9 actions",
+      "got": [
+        "up",
+        "down",
+        "left",
+        "right",
+        "jump",
+        "dash",
+        "interact",
+        "pulse",
+        "pause"
+      ],
+      "ok": true
+    },
+    {
+      "name": "UI text >= 18 px at 1280x720 (visible HUD); large text x1.25",
+      "got": [
+        1280,
+        720,
+        true,
+        true,
+        22.5
+      ],
+      "ok": true
+    },
+    {
+      "name": "captions: low fuel, last 10 s, shade spawn + edge arrow",
+      "got": [
+        true,
+        true,
+        true,
+        "block"
+      ],
+      "ok": true
+    },
+    {
+      "name": "captions: wind warning on night 3",
+      "got": true,
+      "ok": true
+    },
+    {
+      "name": "screen flash on hit (motion allowed)",
+      "got": [
+        2,
+        true
+      ],
+      "ok": true
+    },
+    {
+      "name": "reduce motion (saved): hit still counts, no flash, no blink",
+      "got": [
+        true,
+        2,
+        false
+      ],
+      "ok": true
+    },
+    {
+      "name": "win night 3 -> Bình Minh with total score",
+      "got": [
+        "dawn",
+        "Bình Minh",
+        true
+      ],
+      "ok": true
+    },
+    {
+      "name": "Night 3 ramp meshes slope like the sim surface (both ends within 0.25 m)",
+      "got": true,
+      "ok": true
+    }
+  ]
+}

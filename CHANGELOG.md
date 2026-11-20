@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.0.0] — Phase 4 (Ticket-04 "Bình minh: phát hành v1.0.0", Contract v1.3)
+
+### Breaking changes
+
+- **`game.contract.json`:** `contract_version` "1.3"; thêm `bench_cmd` (`node scripts/bench.js`) và `soak_cmd` (`node --expose-gc scripts/soak.js`). **`run_cmd` đổi từ `npm start` sang `node scripts/serve.js`**, để tham số `--export-leaderboard out.json` được truyền thẳng vào script (npm sẽ nuốt tham số đó).
+- **Phím mặc định của Tạm dừng** là `P` (đổi được); `Esc` luôn tạm dừng. Phím `↑ ↓` không còn là phím di chuyển phụ; `← →` vẫn xoay camera.
+- **URL debug `?bench=1`** (bot đo FPS của webcheck) đổi tên thành `?fpsbot=1`. `?benchmark=1` là cảnh benchmark chuẩn của ticket.
+- **Seed trên web** giờ là seed của cả phiên chơi: Đêm n dùng `seed + n − 1`. Seed này được lưu vào bảng xếp hạng.
+
+### Added
+
+- **Benchmark** (`scripts/bench.js`): mở cửa sổ Chrome thật 1280×720, vsync tắt, chạy cảnh chuẩn (200 Bóng Mực ở trạng thái wander, 100 đom đóm, L1–L3 sáng), camera bay vòng r = 30 m ở Y = 15. Khởi động 3 s, đo `--duration` s, ghi `bench.json` (avg_fps, p1_low_fps, frame_ms_p95, frames, load_ms, peak_mem_mb theo RSS cây tiến trình Chrome).
+- **Chế độ bench trong sim** (`new Game({ bench: true })`): tắt sinh thực thể, sát thương, nhặt đom đóm, hao dầu và điều kiện kết thúc Đêm. Bóng Mực vẫn di chuyển theo luật wander. Không ảnh hưởng gì tới output headless.
+- **Soak** (`scripts/soak.js`): N Đêm trong một tiến trình, input ngẫu nhiên theo seed, ghi `soak.json` (crashes, results, mem_start_mb/mem_end_mb, duration_s).
+- **Bảng xếp hạng cục bộ:** top 10 lưu ở `data/leaderboard.json` qua API của `scripts/serve.js`; nhập tên sau Bình Minh hoặc sau khi thua; có màn hình riêng từ menu; lệnh `--export-leaderboard`.
+- **Dễ tiếp cận:** đổi phím cho 9 hành động (báo trùng, khôi phục mặc định); phụ đề và mũi tên cho Bóng Mực xuất hiện, gió sắp thổi, 10 giây cuối, đèn sắp cạn hoặc đã tắt; giảm chuyển động; chữ tối thiểu 18 px, tùy chọn chữ lớn ×1,25.
+- **Phát hành:** `scripts/package.js` tạo `dist/dao-den-long-v1.0.0.zip` (chạy được chỉ với Node, không cần `npm install`); thêm `Dockerfile`.
+- Rung camera và chớp màn hình khi bị chạm hoặc khi Tỏa Sáng (phần sáng tạo, tắt được).
+
 ## [0.3.0] — Phase 3 (Ticket-03 "Đèn cạn dầu", Contract v1.2)
 
 ### Breaking changes

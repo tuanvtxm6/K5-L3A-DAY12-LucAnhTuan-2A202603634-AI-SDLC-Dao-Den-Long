@@ -1,0 +1,19 @@
+{
+  "contract_version": "1.3",
+  "avg_fps": 333.8,
+  "p1_low_fps": 136.5,
+  "frame_ms_p95": 3.8,
+  "frames": 10014,
+  "load_ms": 641,
+  "peak_mem_mb": 985,
+  "vsync_off": true,
+  "renderer": "three.js r170 WebGL2 on Chrome/157.0.8103.79 (windowed); GPU: ANGLE (NVIDIA, NVIDIA GeForce RTX 4050 Laptop GPU (0x000028E1) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+  "os": "Windows_NT 10.0.26200 x64; 13th Gen Intel(R) Core(TM) i5-13500HX; 32 GB RAM",
+  "canvas": [
+    1280,
+    720
+  ],
+  "seed": 42,
+  "duration_s": 30,
+  "peak_mem_note": "RSS (working set on Windows) summed over the Chrome process tree, sampled during the measured window (every 0.5 s; 2 s on Windows)"
+}
