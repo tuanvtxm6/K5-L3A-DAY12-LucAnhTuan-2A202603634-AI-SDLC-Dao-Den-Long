@@ -1,8 +1,8 @@
 # Đảo Đèn Lồng
 
-> **Video demo:** _(sẽ thêm ở Phase 4)_ · **Phase hiện tại:** 1 (PRD-0) · Đề lab: [docs/lab/](docs/lab/LAB-README.md)
+> **Video demo:** _(sẽ thêm ở Phase 4)_ · **Phase hiện tại:** 2 (Ticket-02, Contract v1.1) · Đề lab: [docs/lab/](docs/lab/LAB-README.md)
 
-Game 3D góc nhìn thứ ba viết bằng Three.js. Mây, người giữ đèn nhỏ tuổi, gom đom đóm để thắp lại 5 Đèn Lồng Lớn trên Đảo Bến và tránh Bóng Mực trong sương đen. Toàn bộ luật chơi nằm trong một module JS thuần ([src/core/sim.js](src/core/sim.js)). Bản web và chế độ headless dùng chung module này, nên điều đã kiểm chứng ở headless cũng chính là luật mà bản web chạy.
+Game 3D góc nhìn thứ ba viết bằng Three.js. Mây, người giữ đèn nhỏ tuổi, gom đom đóm để thắp lại các Đèn Lồng Lớn trên **3 hòn đảo**, tránh Bóng Mực và Gió Lạc trong sương đen. Mọi luật chơi nằm trong một module JS thuần ([src/core/sim.js](src/core/sim.js)). Bản web và chế độ headless dùng chung module đó, nên điều đã kiểm chứng ở headless cũng chính là luật mà bản web chạy.
 
 ## Cài đặt và chạy (macOS / Linux, cần Node ≥ 22)
 
@@ -11,84 +11,85 @@ npm install
 npm start          # mở http://localhost:5173
 ```
 
-Kiểm thử: `npm test` (25 test) · Bằng chứng: `npm run proof` · Headless: xem phần [Test Contract](#test-contract-headless).
+Kiểm thử: `npm test` (54 test) · Bằng chứng headless: `npm run proof` · Kiểm tra trên trình duyệt: `npm run webcheck` (cần Chrome và server đang chạy).
 
 ## Điều khiển
 
 | Phím | Việc |
 |---|---|
 | `W A S D` / `↑ ↓` | Đi theo hướng camera |
-| Kéo chuột / `← →` | Xoay camera |
-| `Space` | Nhảy |
-| `E` | Nạp ánh sáng vào đèn ở gần (≤ 2,5 m) |
-| `Q` | Tỏa sáng: tốn 1 đom đóm, làm choáng và đẩy lùi Bóng Mực trong 6 m |
-| `Enter` / `R` | Bắt đầu / chơi lại |
+| Kéo chuột / `← →` | Xoay camera (độ nhạy chỉnh trong Cài đặt) |
+| `Space` | Nhảy (chỉ khi đang chạm đất) |
+| `Shift` | Lướt: 14 m/s trong 0,2 s, hồi chiêu 1,5 s |
+| `E` | Nạp ánh sáng vào đèn ở gần (≤ 2 m) |
+| `Q` | Tỏa Sáng: tốn 3 đom đóm, làm choáng Bóng Mực trong 5 m |
+| `Esc` / `P` | Tạm dừng: Tiếp tục / Chơi lại Đêm / Cài đặt / Về menu |
+| `F3` | Hiện FPS |
 
-## Luật chơi và cách tính điểm
+## Ba Đêm
 
-- Đi qua đom đóm (≤ 1 m) để nhặt, mang tối đa **5** con.
-- Mỗi đèn cần **5** đom đóm, có thể nạp làm nhiều lần. Thắp đủ **5 đèn** thì thắng.
-- Bóng Mực đuổi theo Mây với tốc độ 3,5 m/s (Mây chạy 6 m/s). Bị chạm thì mất **1 lửa** và rơi **50 %** số đom đóm đang mang, sau đó được miễn nhiễm 1,5 s. Hết **3 lửa** thì thua.
-- Bóng Mực không vào được vùng **5 m** quanh đèn **đã thắp**.
-- Đêm dài **300 s**. Tới bình minh mà chưa thắp hết đèn thì thua.
+| Đêm | Đảo | Đèn | Thời gian | Điểm mới |
+|---|---|---|---|---|
+| 1 | Đảo Bến: đảo tròn 40 m | 5 | 300 s | |
+| 2 | Đảo Cau: 2 đảo nối bằng cầu tre | 6 | 330 s | Bục nhảy, Gió Lạc, Bùa Gió |
+| 3 | Đảo Chuông: 3 tầng, dốc, tháp chuông | 7 | 360 s | Gió mạnh mỗi 30 s, Bóng Mực 4,5 m/s |
+
+Menu → giới thiệu Đêm (lời Ông Đăng) → chơi → kết quả → Đêm kế tiếp. Thắng Đêm 3 thì tới màn **Bình Minh** với tổng điểm. Thua thì chơi lại Đêm đó.
+
+## Luật chơi và điểm (số chuẩn Ticket-02)
+
+- Đi qua đom đóm để nhặt, mang tối đa **10** con. Mỗi đèn cần **10** đom đóm, nạp nhiều lần được.
+- Có **3 Ngọn Lửa**, hồi đầy đầu mỗi Đêm. Bóng Mực chạm thì mất 1 lửa và rơi một nửa số đom đóm ra mặt đất (nhặt lại được trong 8 s), sau đó bất tử 1,5 s.
+- Rơi khỏi đảo thì mất 1 lửa và toàn bộ đom đóm, sau 1 s hồi sinh ở điểm xuất phát.
+- Đèn đã thắp tạo vùng an toàn 6 m mà Bóng Mực không vào được.
+- **Gió Lạc** cướp 3 đom đóm khi Mây mang từ 5 con trở lên. Tỏa Sáng trúng nó thì nó thả lại những gì đã cướp.
+- **Bùa Gió** cho 10 s chạy 7,2 m/s và lướt không hồi chiêu.
 
 | Sự kiện | Điểm |
 |---|---|
-| Nhặt 1 đom đóm | +10 |
+| Mỗi đom đóm **nạp** vào đèn | +10 |
 | Thắp 1 đèn | +100 |
-| Mỗi Bóng Mực bị làm choáng | +20 |
-| Khi thắng: mỗi giây còn lại (làm tròn xuống) | +2 |
-| Khi thắng: mỗi lửa còn lại | +50 |
+| Mỗi Bóng Mực trúng Tỏa Sáng | +5 |
+| Khi thắng: mỗi giây còn lại | +2 |
+| Khi thắng: mỗi Ngọn Lửa còn lại | +50 |
 
-Mọi con số ở trên đều nằm trong [src/core/tuning.js](src/core/tuning.js) và được khai báo y hệt trong [game.contract.json](game.contract.json); test kiểm tra hai nơi này luôn khớp nhau. Các giả định cho những chỗ PRD-0 còn mơ hồ được ghi ở [docs/notes/phase-1-assumptions.md](docs/notes/phase-1-assumptions.md).
+Tổng điểm game là tổng điểm các Đêm đã thắng. Mọi con số nằm trong [src/core/tuning.js](src/core/tuning.js) và trùng khớp với [game.contract.json](game.contract.json). Giả định cho những chỗ ticket chưa nói rõ: [Phase 1](docs/notes/phase-1-assumptions.md), [Phase 2](docs/notes/phase-2-spec.md).
 
-`fall_enabled = false`: đảo có bờ chặn, người chơi và Bóng Mực không rơi ra ngoài được, nên không có sự kiện `player_hit` với `by: "fall"`.
-
-## Test Contract (headless)
+## Test Contract v1.1 (headless)
 
 ```bash
-node src/headless.js --seed 1 --night 1 --ticks 600 --out out.jsonl \
-  [--scenario tests/scenarios/win_all_lit.scenario.json] [--inputs tests/scenarios/win_all_lit.inputs.json] [--snapshot-every 10]
+node src/headless.js --seed 1 --night 2 --ticks 600 --out out.jsonl \
+  [--scenario tests/scenarios/drifter.scenario.json] [--inputs tests/scenarios/drifter.inputs.json] [--snapshot-every 10]
 ```
 
-- Không cần cửa sổ hay GPU. Một đêm 18 000 tick, snapshot mỗi tick, chạy khoảng 0,26 s (i5-13500HX, Node 24).
+- `--night` nhận 1, 2 hoặc 3. Logic chạy cố định 60 tick/giây, không cần cửa sổ hay GPU. Một Đêm 3 đầy đủ (21 600 tick, snapshot mỗi tick) chạy hết 0,58 s.
 - Exit `0` khi chạy xong, `2` khi file inputs/scenario sai định dạng, `1` khi tham số CLI sai.
-- Tất định: cùng seed, scenario và inputs cho ra output giống hệt từng byte. CI chạy trên Linux và macOS và so output với bản đã commit.
+- Tất định: cùng seed, scenario và inputs cho ra output giống hệt từng byte. CI chạy trên Linux và macOS rồi so output với bản đã commit.
 
 ## Bằng chứng
 
 | Phase | Kết quả | Chi tiết |
 |---|---|---|
-| 1 | 25/25 test, 7/7 scenario | [docs/proof/phase-1/](docs/proof/phase-1/README.md) |
+| 1 | 25/25 test, 7/7 scenario (số Phase 1, tag `phase-1`) | [docs/proof/phase-1/](docs/proof/phase-1/README.md) |
+| 2 | 54/54 test, 20/20 scenario, 10/10 bước flow trên Chrome, ~165 FPS ở 1280×720 | [docs/proof/phase-2/](docs/proof/phase-2/README.md) |
 
 ## Sáng tạo của tôi
 
-Các phần thêm chỉ nằm ở lớp hiển thị ([web/main.js](web/main.js)), không đụng vào `src/core`, nên output headless không đổi.
+Tất cả nằm ở lớp hiển thị ([web/](web/)), không đụng vào `src/core`, nên output headless không đổi.
 
-- **Đảo sáng dần:** mỗi đèn được thắp làm trời sáng hơn và sương tan bớt. Đèn chưa thắp phát sáng theo tỉ lệ đã nạp, đèn đã thắp có vòng sáng đánh dấu vùng an toàn.
-- **Chiếc đèn trên nón lá của Mây** sáng hơn theo số đom đóm đang mang.
-- **Âm thanh tổng hợp bằng WebAudio** (không dùng file asset) cho các sự kiện nhặt, nạp, thắp, tỏa sáng, bị chạm và Bóng Mực xuất hiện. Kèm theo đó là vòng sáng khi tỏa sáng và Bóng Mực mờ đi khi bị choáng.
+- **Đảo sáng dần:** sương tan bớt theo số đèn đã thắp. Đèn chưa thắp ấm dần theo lượng ánh sáng đã nạp. Đèn đã thắp có vòng sáng đánh dấu vùng an toàn.
+- **Ông Đăng** dẫn chuyện ở màn giới thiệu mỗi Đêm.
+- **Âm thanh tổng hợp bằng WebAudio** (không dùng file asset): nhạc nền ngũ cung và tiếng gió dùng nhiễu lọc.
+- Gió Lạc là dải lụa uốn lượn, và hiện đốm sáng khi đang giữ đom đóm vừa cướp.
 
-Bằng chứng phần lõi vẫn đúng: headless không tải file nào trong `web/` (`grep -rnE "^import .*web/" src/` không ra kết quả). Test vẫn 25/25, `npm run proof` vẫn 7/7, và output tất định có hash `a17196fed5878156` (seed 7).
-
-## Cấu trúc
-
-```text
-src/core/      sim.js (luật), tuning.js (số), rng.js, validate.js
-src/           headless.js, runner.js
-web/           index.html, main.js (Three.js renderer + input)
-tests/         *.test.js, scenarios/
-scripts/       serve.js, proof.js, stop-gate.js (hook)
-docs/notes/    giả định, nhật ký AI, đánh giá
-docs/proof/    bằng chứng từng phase
-AGENTS.md, CLAUDE.md, .claude/ (skill verify, Stop hook), .github/workflows/ci.yml
-```
+Bằng chứng phần lõi vẫn đúng: `grep -rnE "^import .*web/" src/` không ra kết quả. Proof 20/20, test 54/54, và output headless tất định ở cả 3 Đêm.
 
 ## Harness AI
 
 | Thành phần | Dùng khi |
 |---|---|
-| [AGENTS.md](AGENTS.md) (CLAUDE.md import lại) | Mọi phiên: lệnh, cấu trúc, quy tắc tick/contract |
-| [.claude/skills/verify](.claude/skills/verify/SKILL.md) | Sau khi đổi luật/tuning/CLI, trước khi gắn tag |
+| [AGENTS.md](AGENTS.md) (CLAUDE.md import lại) | Mọi phiên: lệnh, cấu trúc, thứ tự tick, quy tắc test |
+| [.claude/skills/verify](.claude/skills/verify/SKILL.md) | Sau khi đổi luật, bản đồ, CLI hoặc UI; trước khi gắn tag |
 | [Stop hook](.claude/settings.json) → [scripts/stop-gate.js](scripts/stop-gate.js) | Tự động: chặn agent kết thúc khi `npm test` đỏ |
-| [CI](.github/workflows/ci.yml) | Mỗi lần push: test, proof, kiểm tra output tất định trên Linux và macOS |
+| [scripts/webcheck.js](scripts/webcheck.js) | Agent tự chạy game trong Chrome thật: ảnh, kiểm tra flow, FPS |
+| [CI](.github/workflows/ci.yml) | Mỗi lần push: test, proof, kiểm tra tất định trên Linux và macOS |
