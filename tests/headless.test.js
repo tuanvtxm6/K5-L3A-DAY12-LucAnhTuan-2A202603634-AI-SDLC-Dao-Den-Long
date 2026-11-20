@@ -23,7 +23,7 @@ function headless(args) {
 }
 
 test('contract file: version, commands, tuning matches the code', () => {
-  assert.equal(contract.contract_version, '1.0');
+  assert.equal(contract.contract_version, '1.1');
   for (const k of ['team', 'build_cmd', 'run_cmd', 'headless_cmd']) assert.equal(typeof contract[k], 'string');
   assert.deepEqual(contract.tuning, TUNING);
 });
@@ -35,9 +35,10 @@ test('output format: snapshot at 0 and every N, events, final end line', () => {
   assert.deepEqual(snaps.map((s) => s.tick), [0, 20, 40, 60, 80]);
   for (const s of snaps) {
     assert.equal(s.sim_tick, s.tick);
-    for (const k of ['state', 'time_left_s', 'score', 'player', 'lanterns', 'shades', 'motes_active']) assert.ok(k in s, k);
+    for (const k of ['night', 'state', 'time_left_s', 'score', 'wind', 'player', 'lanterns', 'shades', 'motes_active', 'motes', 'drifters', 'charms']) assert.ok(k in s, k);
     assert.equal(s.time_left_s, Math.round((TUNING.night1_duration_s - s.tick / 60) * 1000) / 1000);
   }
+  assert.deepEqual(r.lines[1], { type: 'event', tick: 0, name: 'night_start', data: { night: 1 } });
   assert.deepEqual(r.lines.at(-1), { type: 'end', ticks: 95, state: 'playing', score: 0 });
 });
 
@@ -56,15 +57,15 @@ test('determinism: same seed/scenario/inputs -> identical bytes; other seed diff
   assert.notEqual(a.raw, c.raw);
 });
 
-test('contract example scenario + inputs: event ticks follow the tick model', () => {
-  const scenario = file({ player: { pos: [0, 0, 0], carried: 0, flames: 3 }, random_motes: false, random_shades: false, motes: [[0, 0, 5]], shades: [{ pos: [10, 0, 0] }], lanterns: [{ id: 'L1', pos: [0, 0, 25], deposited: 0 }], time_left_s: 300 });
+test('contract v1.0 example under v1.1 numbers: event ticks follow the tick model', () => {
+  const scenario = file({ player: { pos: [0, 0, 0], carried: 3, flames: 3 }, random_motes: false, random_shades: false, motes: [[0, 0, 5]], shades: [{ pos: [10, 0, 0] }], lanterns: [{ id: 'L1', pos: [0, 0, 25], deposited: 0 }], time_left_s: 300 });
   const inputs = file({ frames: [{ tick: 0, move: [0, 1], cam_yaw_deg: 0 }, { tick: 120, move: [0, 0], interact: true }, { tick: 121, interact: false }, { tick: 200, pulse: true }, { tick: 201, pulse: false }] });
   const r = headless(['--seed', '1', '--night', '1', '--scenario', scenario, '--inputs', inputs, '--ticks', '300']);
   assert.equal(r.code, 0, r.stderr);
   const ev = r.lines.filter((l) => l.type === 'event');
-  // 4 m at 0.1 m/tick -> picked in step 39 -> tick 40; pulse frame at tick 200 -> event tick 201
-  assert.deepEqual(ev.map((e) => [e.tick, e.name]), [[40, 'mote_picked'], [201, 'pulse']]);
-  assert.deepEqual(ev[1].data, { stunned_ids: ['S1'] });
+  // 0.1 s ramp covers 0.35 m in 6 ticks, then 0.1 m/tick: 4 m reached at tick 43; pulse frame 200 -> event tick 201
+  assert.deepEqual(ev.map((e) => [e.tick, e.name]), [[0, 'night_start'], [43, 'mote_picked'], [201, 'pulse']]);
+  assert.deepEqual(ev[2].data, { stunned_ids: ['S1'] });
   const s0 = r.lines[0];
   assert.equal(s0.tick, 0); assert.equal(s0.motes_active, 1); assert.equal(s0.score, 0);
   assert.deepEqual(s0.lanterns[0], { id: 'L1', pos: [0, 0, 25], lit: false, deposited: 0 });
@@ -91,7 +92,8 @@ test('malformed inputs/scenario -> exit 2 with stderr message', () => {
     assert.equal(r.code, 2, `inputs ${readFileSync(f, 'utf8')}`);
     assert.match(r.stderr, /inputs/);
   }
-  for (const sc of [{ shades: [{}] }, { player: { pos: [0, 0] } }, { random_motes: 'yes' }]) {
+  for (const sc of [{ shades: [{}] }, { player: { pos: [0, 0] } }, { random_motes: 'yes' }, { shades: [{ pos: [1, 0, 1], state: 'angry' }] },
+    { charms: [{ id: 'C9' }] }, { drifters: [{ pos: [0, 0, 0], stolen: -1 }] }, { player: { invuln_ticks: 1.5 } }]) {
     const r = headless(['--seed', '1', '--night', '1', '--scenario', file(sc), '--ticks', '10']);
     assert.equal(r.code, 2, JSON.stringify(sc));
   }
@@ -100,5 +102,26 @@ test('malformed inputs/scenario -> exit 2 with stderr message', () => {
 
 test('bad CLI usage -> non-zero exit', () => {
   assert.notEqual(headless(['--night', '1', '--ticks', '10']).code, 0); // no seed
-  assert.notEqual(headless(['--seed', '1', '--night', '2', '--ticks', '10']).code, 0);
+  assert.notEqual(headless(['--seed', '1', '--night', '4', '--ticks', '10']).code, 0);
+});
+
+test('nights 2 and 3 run; full night 3 (21600 ticks) finishes well under 30 s', () => {
+  const r2 = headless(['--seed', '1', '--night', '2', '--ticks', '60']);
+  assert.equal(r2.code, 0, r2.stderr);
+  assert.equal(r2.lines[0].night, 2);
+  const sc = file({ player: { flames: 100000 } });
+  const t0 = Date.now();
+  const r3 = headless(['--seed', '1', '--night', '3', '--scenario', sc, '--ticks', '21600', '--snapshot-every', '1']);
+  const ms = Date.now() - t0;
+  assert.equal(r3.code, 0, r3.stderr);
+  assert.deepEqual(r3.lines.at(-1).ticks, 21600);
+  assert.ok(ms < 30000, `took ${ms} ms`);
+});
+
+test('pause through the CLI: snapshots say paused, sim_tick frozen', () => {
+  const inputs = file({ frames: [{ tick: 10, pause: true }, { tick: 11, pause: false }, { tick: 40, pause: true }] });
+  const r = headless(['--seed', '1', '--night', '1', '--inputs', inputs, '--ticks', '60', '--snapshot-every', '10']);
+  const snaps = r.lines.filter((l) => l.type === 'snapshot');
+  assert.deepEqual(snaps.map((s) => [s.tick, s.sim_tick, s.state]), [[0, 0, 'playing'], [10, 10, 'playing'], [20, 10, 'paused'], [30, 10, 'paused'], [40, 10, 'paused'], [50, 20, 'playing'], [60, 30, 'playing']]); // paused ticks 11..40; tick 41 resumes and simulates
+  assert.deepEqual(r.lines.filter((l) => l.type === 'event' && l.name !== 'night_start').map((e) => [e.tick, e.name]), [[11, 'paused'], [41, 'resumed']]);
 });
