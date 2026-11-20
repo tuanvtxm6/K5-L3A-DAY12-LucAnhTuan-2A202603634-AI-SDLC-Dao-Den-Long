@@ -57,18 +57,19 @@ async function shot(url, file, waitMs) {
 }
 
 const report = { url: base, errors };
-await shot(`${base}/`, 'menu.png', 1500);
+const quick = !!process.env.FLOW_ONLY; // skip screenshots + FPS bench
+if (!quick) await shot(`${base}/`, 'menu.png', 1500);
 report.gpu = await evaluate(`(() => { const gl = document.createElement('canvas').getContext('webgl2');
   const ext = gl && gl.getExtension('WEBGL_debug_renderer_info'); return ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : 'unknown'; })()`);
-for (const n of [1, 2, 3]) await shot(`${base}/?night=${n}&autostart=1&seed=7`, `night${n}.png`, 2500);
+if (!quick) for (const n of [1, 2, 3]) await shot(`${base}/?night=${n}&autostart=1&seed=7`, `night${n}.png`, 2500);
 report.bench = {};
-for (const n of [1, 2, 3]) {
+for (const n of quick ? [] : [1, 2, 3]) {
   await send('Page.navigate', { url: `${base}/?night=${n}&autostart=1&seed=7&bench=1` });
   let b = null;
   for (let i = 0; i < 40 && !b; i++) { await sleep(500); b = await evaluate('window.__bench || null'); }
   report.bench[`night${n}`] = b;
 }
-await shot(`${base}/?night=3&autostart=1&seed=7&bench=1`, 'night3-action.png', 6000);
+if (!quick) await shot(`${base}/?night=3&autostart=1&seed=7&bench=1`, 'night3-action.png', 6000);
 
 // ---- screen flow, pause, settings persistence, HUD rules ----
 const flow = [];
@@ -106,6 +107,12 @@ await step('win night 3 -> Bình Minh with total score', `(() => { __ddl.game.la
   r([__ddl.screen, document.querySelector('#card h1').textContent, /Tổng điểm: \\d+/.test(document.querySelector('#card').textContent)]), 300)); })()`, ['dawn', 'Bình Minh', true]);
 const { result: ds } = await send('Page.captureScreenshot', { format: 'png' });
 writeFileSync(join(outDir, 'dawn.png'), Buffer.from(ds.data, 'base64'));
+await go('?night=3&autostart=1&seed=3');
+await step('Night 3 ramp meshes slope like the sim surface (both ends within 0.25 m)', `(() => {
+  const ramps = __ddl.world.level.children.filter((m) => m.userData.ramp);
+  return ramps.length === 2 && ramps.every((m) => { m.updateWorldMatrix(true, false);
+    return [-1, 1].every((e) => { const v = new m.position.constructor(e * (m.userData.ramp.len / 2 - 0.3), 0.15, 0); m.localToWorld(v);
+      return Math.abs(v.y - __ddl.game.map.surface(v.x, v.z)) < 0.25; }); }); })()`, true);
 report.flow = flow;
 writeFileSync(join(outDir, 'webcheck.json'), JSON.stringify(report, null, 2) + '\n');
 console.log(JSON.stringify(report, null, 2));

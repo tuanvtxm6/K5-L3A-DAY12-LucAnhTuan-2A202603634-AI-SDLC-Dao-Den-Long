@@ -122,7 +122,9 @@ export class World {
       ramp.position.set(27 * Math.cos(a), 1.5 - 0.15, 27 * Math.sin(a));
       ramp.rotation.order = 'YXZ';
       ramp.rotation.y = -a;
-      ramp.rotation.z = Math.atan2(3, 6); // rises toward the center
+      // local +X points outward after rotation.y, so tilt it DOWN: high end (Y=3) at r=24, low end at r=30
+      ramp.rotation.z = -Math.atan2(3, 6);
+      ramp.userData.ramp = { len };
       g.add(ramp);
     }
   }

@@ -235,10 +235,15 @@ function drawHud(lit) {
 }
 
 // read-only-ish handle for scripts/webcheck.js (flow tests); gameplay never reads it
-window.__ddl = { get game() { return game; }, get screen() { return screen; } };
+window.__ddl = { get game() { return game; }, get screen() { return screen; }, world };
 
 // ---------- boot ----------
 $('fps').style.display = params.has('fps') || bench ? '' : 'none';
 const startNight = Number(params.get('night')) || 1;
-if (params.has('autostart')) { night = startNight; start(startNight); } else if (params.has('night')) intro(startNight); else menu();
+if (params.has('autostart')) {
+  night = startNight; start(startNight);
+  // ?at=x,y,z&yaw=deg places Mây for screenshots (debug only)
+  if (params.has('at')) game.player.pos = params.get('at').split(',').map(Number);
+  if (params.has('yaw')) camYaw = Number(params.get('yaw'));
+} else if (params.has('night')) intro(startNight); else menu();
 requestAnimationFrame(frame);
