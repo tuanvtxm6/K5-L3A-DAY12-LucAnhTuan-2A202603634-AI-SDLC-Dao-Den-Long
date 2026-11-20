@@ -5,58 +5,82 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Đảo Đèn Lồng</title>
   <style>
-    :root { --text: #f5f1e6; --danger: #ff5a5f; --gold: #f2c14e; --lit: #ffb347; --panel: rgba(14, 20, 48, .72); --edge: rgba(242, 193, 78, .4); }
+    /* Ticket-04: every UI text >= 18 px at 1280x720 (1rem = 18px); large text = x1.25 */
+    html { font-size: 18px; }
+    html:has(body.big) { font-size: 22.5px; }
+    :root { --text: #f5f1e6; --danger: #ff5a5f; --gold: #f2c14e; --lit: #ffb347; --panel: rgba(14, 20, 48, .78); --edge: rgba(242, 193, 78, .4); }
+    body.cb { --danger: #ffffff; } /* Ticket-03 colour-blind mode: warning = white + ⚠ */
     html, body { margin: 0; height: 100%; overflow: hidden; background: #0e1430; font-family: system-ui, "Segoe UI", sans-serif; color: var(--text); user-select: none; }
+    body { font-size: 1rem; }
     canvas { display: block; }
     .hud { position: fixed; display: none; pointer-events: none; }
     body.playing .hud { display: flex; }
     .panel { background: var(--panel); border: 1px solid var(--edge); border-radius: 10px; padding: 6px 12px; }
     #flames { top: 12px; left: 12px; gap: 6px; align-items: center; }
-    .flame { width: 18px; height: 24px; border-radius: 50% 50% 45% 45% / 60% 60% 40% 40%; background: radial-gradient(circle at 50% 70%, #fff2b0, var(--lit) 55%, #c25b00); box-shadow: 0 0 8px var(--lit); }
+    .flame { width: 1.1rem; height: 1.4rem; border-radius: 50% 50% 45% 45% / 60% 60% 40% 40%; background: radial-gradient(circle at 50% 70%, #fff2b0, var(--lit) 55%, #c25b00); box-shadow: 0 0 8px var(--lit); }
     .flame.out { background: #3a3450; box-shadow: none; }
-    #timer { top: 12px; left: 50%; transform: translateX(-50%); font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; }
-    body.cb { --danger: #ffffff; } /* Ticket-03 colour-blind mode: warning = white + ⚠ */
+    #timer { top: 12px; left: 50%; transform: translateX(-50%); font-size: 1.5rem; font-weight: 700; font-variant-numeric: tabular-nums; }
     #timer.danger { color: var(--danger); animation: blink 1s steps(2) infinite; }
+    body.rm #timer.danger { animation: none; } /* reduce motion: no blinking */
     @keyframes blink { 50% { opacity: .35; } }
-    #right { top: 12px; right: 12px; flex-direction: column; align-items: flex-end; font-size: 16px; line-height: 1.5; }
+    #captions { top: 72px; left: 50%; transform: translateX(-50%); flex-direction: column; align-items: center; gap: 4px; }
+    #captions div { background: rgba(0, 0, 0, .65); padding: 4px 12px; border-radius: 8px; font-size: 1rem; }
+    #right { top: 12px; right: 12px; flex-direction: column; align-items: flex-end; font-size: 1rem; line-height: 1.5; }
     #right b { color: var(--gold); }
     #motes { bottom: 18px; left: 50%; transform: translateX(-50%); gap: 4px; align-items: center; }
-    #capText { margin-left: 6px; font-weight: 700; color: var(--gold); }
-    .cell { width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--edge); background: rgba(255, 255, 255, .05); }
+    #capText { margin-left: 6px; font-weight: 700; color: var(--gold); font-size: 1rem; }
+    .cell { width: 1.1rem; height: 1.1rem; border-radius: 50%; border: 1px solid var(--edge); background: rgba(255, 255, 255, .05); }
     .cell.on { background: radial-gradient(circle, #fff6c2 30%, #ffe58a 70%, transparent 72%); border-color: #ffe58a; box-shadow: 0 0 8px #ffe58a; }
     #cds { bottom: 14px; right: 14px; gap: 10px; }
-    .cd { width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 700; border: 2px solid var(--edge);
+    .cd { width: 4rem; height: 4rem; border-radius: 50%; display: grid; place-items: center; font-size: 1rem; font-weight: 700; border: 2px solid var(--edge); text-align: center; line-height: 1.1;
           background: conic-gradient(rgba(14, 20, 48, .85) var(--p, 0%), rgba(242, 193, 78, .35) 0); }
-    .cd small { display: block; font-size: 10px; font-weight: 400; text-align: center; }
+    .cd small { display: block; font-size: 1rem; font-weight: 400; }
     .cd.ready { border-color: var(--gold); box-shadow: 0 0 10px rgba(242, 193, 78, .6); }
-    #charm { bottom: 80px; right: 14px; color: #ff8a8f; font-size: 14px; }
-    #hint { bottom: 56px; left: 50%; transform: translateX(-50%); font-size: 16px; }
-    #arrow { width: 0; height: 0; border-left: 14px solid transparent; border-right: 14px solid transparent; border-bottom: 30px solid var(--lit); filter: drop-shadow(0 0 6px var(--lit)); top: 0; left: 0; }
-    #fps { bottom: 4px; left: 6px; font: 12px monospace; opacity: .7; }
+    #charm { bottom: 96px; right: 14px; color: #ff8a8f; font-size: 1rem; }
+    #hint { bottom: 64px; left: 50%; transform: translateX(-50%); font-size: 1rem; }
+    #arrow, #spawnArrow { width: 0; height: 0; border-left: 14px solid transparent; border-right: 14px solid transparent; border-bottom: 30px solid var(--lit); filter: drop-shadow(0 0 6px var(--lit)); top: 0; left: 0; }
+    #spawnArrow { border-bottom-color: #b48cff; filter: drop-shadow(0 0 6px #7a3cff); }
+    body.cb #spawnArrow { border-bottom-color: #00b3ff; filter: drop-shadow(0 0 6px #00b3ff); }
+    #fps { bottom: 4px; left: 6px; font: 1rem monospace; opacity: .75; }
+    #flash { position: fixed; inset: 0; pointer-events: none; opacity: 0; transition: opacity .15s; }
     #overlay { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(8, 10, 28, .7); }
-    #card { max-width: 480px; margin: 16px; padding: 24px 28px; text-align: center; background: rgba(14, 20, 48, .95); border: 1px solid var(--edge); border-radius: 14px; }
-    #card h1 { margin: 0 0 6px; color: var(--gold); font-size: 30px; }
-    #card h2 { margin: 0 0 8px; color: var(--lit); font-size: 22px; }
+    #card { max-width: 34rem; max-height: 92vh; overflow-y: auto; margin: 16px; padding: 20px 26px; text-align: center; background: rgba(14, 20, 48, .95); border: 1px solid var(--edge); border-radius: 14px; }
+    #card h1 { margin: 0 0 6px; color: var(--gold); font-size: 1.8rem; }
+    #card h2 { margin: 0 0 8px; color: var(--lit); font-size: 1.35rem; }
+    #card h3 { margin: 14px 0 6px; font-size: 1.1rem; }
     #card p { margin: 8px 0; line-height: 1.5; }
     #card .quote { font-style: italic; opacity: .9; }
     #card kbd { padding: 1px 6px; border-radius: 4px; background: #2a3160; font-family: inherit; }
-    #card button { display: block; width: 100%; margin: 8px 0; padding: 10px; border-radius: 8px; border: 1px solid var(--edge); background: #1b2350; color: var(--text); font-size: 16px; cursor: pointer; }
+    #card button { display: block; width: 100%; margin: 8px 0; padding: 10px; border-radius: 8px; border: 1px solid var(--edge); background: #1b2350; color: var(--text); font-size: 1rem; cursor: pointer; }
     #card button:hover, #card button:focus { background: #2a3470; outline: 2px solid var(--gold); }
-    #card label { display: block; margin: 12px 0; text-align: left; }
+    #card label { display: block; margin: 10px 0; text-align: left; }
     #card input[type=range] { width: 100%; accent-color: var(--gold); }
+    #card input[type=checkbox] { width: 1.1rem; height: 1.1rem; vertical-align: -2px; accent-color: var(--gold); }
+    #card input[type=text] { display: block; width: 100%; box-sizing: border-box; margin-top: 6px; padding: 8px; font-size: 1rem; border-radius: 6px; border: 1px solid var(--edge); background: #0e1430; color: var(--text); }
+    #card .err { color: var(--danger); min-height: 1rem; }
+    #card .note { opacity: .8; }
+    .keys { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; align-items: center; text-align: left; }
+    #card .keys button { margin: 0; padding: 6px; }
+    #card .keys button.dup { border-color: var(--danger); color: var(--danger); }
+    table.lb { width: 100%; border-collapse: collapse; font-size: 1rem; margin: 8px 0; }
+    table.lb th, table.lb td { padding: 4px 6px; border-bottom: 1px solid rgba(242, 193, 78, .2); }
+    table.lb tr.me td { color: var(--gold); font-weight: 700; }
   </style>
   <script type="importmap">{ "imports": { "three": "/three/three.module.min.js" } }</script>
 </head>
 <body>
   <div class="hud panel" id="flames"></div>
   <div class="hud panel" id="timer"></div>
+  <div class="hud" id="captions" role="status" aria-live="polite"></div>
   <div class="hud panel" id="right"></div>
   <div class="hud" id="motes"></div>
   <div class="hud" id="cds"></div>
   <div class="hud panel" id="charm"></div>
   <div class="hud panel" id="hint"></div>
   <div class="hud" id="arrow"></div>
+  <div class="hud" id="spawnArrow"></div>
   <div class="hud" id="fps"></div>
+  <div id="flash"></div>
   <div id="overlay"><div id="card"></div></div>
   <script type="module" src="/main.js"></script>
 </body>
